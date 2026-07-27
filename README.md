@@ -95,6 +95,24 @@ src/
 - **Cause:** `/login` route missing
 - **Fix:** Added proper route handling
 
+### 9.Browser Extension Interference
+
+**Issue**
+Firebase Authentication suddenly started throwing `auth/network-request-failed` errors, even though the authentication code and Firebase configuration were correct.
+
+**Root Cause**
+A browser extension injected a `content.js` script that interfered with Firebase network requests.
+
+**Diagnosis**
+- Verified Login.jsx and firebase.js.
+- Tested in Google Chrome.
+- Opened the application in Incognito Mode.
+- Authentication worked correctly in Incognito Mode.
+- Confirmed the issue was caused by a browser extension rather than the application.
+
+**Solution**
+Disable the problematic browser extension or use a clean browser profile for development.
+
 ---
 
 ## 🔹 Future Improvements
