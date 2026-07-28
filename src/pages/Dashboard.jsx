@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { auth } from "../firebase";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import "../styles/dashboard.css";
 import Navbar from "../components/Navbar";
+import WelcomeSection from "../components/WelcomeSection";
+import StatCard from "../components/StatCard";
+import RecentActivity from "../components/RecentActivity";
 
 
 function Dashboard() {
@@ -12,51 +15,55 @@ function Dashboard() {
   const [userEmail, setUserEmail] = useState("");
 
   useEffect(() => {
-    onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        navigate("/login");
-      } else {
-        setUserEmail(user.email); // ✅ get user email
-      }
-    });
-  }, []);
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      navigate("/login");
+    } else {
+      setUserEmail(user.email);
+    }
+  });
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    navigate("/login");
-  };
+  return () => unsubscribe();
+}, [navigate]);
+
+  
 
  return (
   <div className="dashboard">
     <Sidebar />
 
     <div className="main-content">
-        <Navbar userEmail={userEmail} />
+      <Navbar userEmail={userEmail} />
 
-      <h1>Dashboard</h1>
-
-      <h3>Welcome, {userEmail}</h3>
+      <WelcomeSection userEmail={userEmail} />
 
       <div className="cards">
-        <div className="card">
-          <h2>Total Buses</h2>
-          <p>0</p>
-        </div>
+  <StatCard
+    title="Total Buses"
+    value="0"
+    icon="🚌"
+  />
 
-        <div className="card">
-          <h2>Active Routes</h2>
-          <p>0</p>
-        </div>
+  <StatCard
+    title="Active Routes"
+    value="0"
+    icon="📍"
+  />
 
-        <div className="card">
-          <h2>Registered Users</h2>
-          <p>0</p>
-        </div>
-
-  
-      </div>
+  <StatCard
+    title="Registered Users"
+    value="0"
+    icon="👥"
+  />
+</div>
+  <RecentActivity />
     </div>
-  </div>
+    
+
+
+
+</div>
+ 
 );
 }
 
