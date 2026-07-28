@@ -1,0 +1,27 @@
+.bus-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 30px;
+  background: white;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.bus-table th,
+.bus-table td {
+  border: 1px solid #ddd;
+  padding: 14px;
+  text-align: center;
+}
+
+.bus-table th {
+  background-color: #1e3a5f;
+  color: white;
+}
+
+.bus-table tr:nth-child(even) {
+  background-color: #f8f8f8;
+}
+
+.bus-table tr:hover {
+  background-color: #eef5ff;
+}
