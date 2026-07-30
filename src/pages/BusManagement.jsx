@@ -1,10 +1,23 @@
+import {useState} from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import "../styles/dashboard.css";
 import "../styles/busManagement.css";
 
+
 function BusManagement() {
-    const buses = [
+
+
+  const [newBus, setNewBus] = useState({
+  busNumber: "",
+  busName: "",
+  driver: "",
+  route: "",
+  capacity: "",
+  status: "Active",
+});
+
+    const [buses, setBuses] =useState ([
   {
     id: 1,
     busNumber: "AS01AB1234",
@@ -32,7 +45,28 @@ function BusManagement() {
     capacity: 50,
     status: "Active",
   },
-];
+]);
+const handleChange = (e) => {
+  setNewBus({
+    ...newBus,
+    [e.target.name]: e.target.value,
+  });
+};
+
+const handleAddBus = () => {
+   const busExists = buses.some(
+    (bus) => bus.busNumber === newBus.busNumber
+  );
+
+  if (busExists) {
+    alert("Bus number already exists!");
+    return;
+  }
+setBuses([
+  ...buses,
+  newBus,
+]);
+};
   return (
     <div className="dashboard">
       <Sidebar />
@@ -45,6 +79,67 @@ function BusManagement() {
         <p>
           Manage all buses from this page.
         </p>
+        <div className="add-bus-form">
+  <h2>Add New Bus</h2>
+
+  <div className="form-grid">
+    <input 
+    type="text" 
+    name="busNumber" 
+    placeholder="Bus Number" 
+    value={newBus.busNumber}
+  onChange={handleChange}
+/>
+
+    <input
+  type="text"
+  name="busName"
+  placeholder="Bus Name"
+  value={newBus.busName}
+  onChange={handleChange}
+/>
+    <input
+  type="text"
+  name="driver"
+  placeholder="Driver Name"
+  value={newBus.driver}
+  onChange={handleChange}
+/>
+
+    <input
+  type="text"
+  name="route"
+  placeholder="Route"
+  value={newBus.route}
+  onChange={handleChange}
+/>
+
+    <input
+  type="number"
+  name="capacity"
+  placeholder="Capacity"
+  value={newBus.capacity}
+  onChange={handleChange}
+/>
+
+    <select
+      name= "status"
+      value={newBus.status}
+      onChange={handleChange}
+      >
+
+      <option>Active</option>
+      <option>Maintenance</option>
+    </select>
+  </div>
+
+  <button
+   className="add-bus-btn"
+   onClick={handleAddBus}
+   >
+    Add Bus
+  </button>
+</div>
         <table className="bus-table">
   <thead>
     <tr>
@@ -59,7 +154,7 @@ function BusManagement() {
 
   <tbody>
     {buses.map((bus) => (
-      <tr key={bus.id}>
+      <tr key={bus.busNumber}>
         <td>{bus.busNumber}</td>
         <td>{bus.busName}</td>
         <td>{bus.driver}</td>

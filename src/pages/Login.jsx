@@ -10,15 +10,20 @@ function Login() {
   const navigate = useNavigate();
 
   const handleLogin = async () => {
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      alert("Login Successful");
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
 
-      navigate("/dashboard"); // 🔥 redirect
-    } catch (error) {
-      alert(error.message);
-    }
-  };
+    alert("Login Successful");
+
+    navigate("/dashboard");
+  } catch (error) {
+    console.error("Firebase Error:", error);
+console.log("Code:", error.code);
+console.log("Message:", error.message);
+
+    alert(error.message);
+  }
+};
 
   return (
 

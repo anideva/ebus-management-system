@@ -25,3 +25,56 @@
 .bus-table tr:hover {
   background-color: #eef5ff;
 }
+
+/* -----------------------------
+   Add Bus Form
+------------------------------ */
+
+.add-bus-form {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 25px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.add-bus-form h2 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.form-grid input,
+.form-grid select {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 15px;
+    outline: none;
+}
+
+.form-grid input:focus,
+.form-grid select:focus {
+    border-color: #0d6efd;
+}
+
+.add-bus-btn {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #0d6efd;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    transition: background-color 0.3s;
+}
+
+.add-bus-btn:hover {
+    background-color: #0b5ed7;
+}
