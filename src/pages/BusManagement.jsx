@@ -46,13 +46,16 @@ function BusManagement() {
     status: "Active",
   },
 ]);
+
+//HANDLING THE CHANGE 
 const handleChange = (e) => {
+  //Reset the form after succesfully adding a bus
   setNewBus({
     ...newBus,
     [e.target.name]: e.target.value,
   });
 };
-
+/// PREVENT DUBLICATE BUS NUMBERS
 const handleAddBus = () => {
    const busExists = buses.some(
     (bus) => bus.busNumber === newBus.busNumber
@@ -66,6 +69,15 @@ setBuses([
   ...buses,
   newBus,
 ]);
+//Create a new array excluding the selected bus
+const handleDeleteBus =(busNumber) =>{
+  const filteredBuses= buses.filter(
+    (bus)=> bus.busNumber!== busNumber
+  );
+ setBuses(filteredBuses);
+ alert(`Bus number ${busNumber} deleted successfully.`);
+  
+};
 };
   return (
     <div className="dashboard">
