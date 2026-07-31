@@ -55,7 +55,7 @@ const handleChange = (e) => {
     [e.target.name]: e.target.value,
   });
 };
-/// PREVENT DUBLICATE BUS NUMBERS
+/// PREVENT DUBLICATE BUS NUMBERS while adding the bus.
 const handleAddBus = () => {
    const busExists = buses.some(
     (bus) => bus.busNumber === newBus.busNumber
@@ -69,6 +69,8 @@ setBuses([
   ...buses,
   newBus,
 ]);
+};
+//handle delete bus button
 //Create a new array excluding the selected bus
 const handleDeleteBus =(busNumber) =>{
   const filteredBuses= buses.filter(
@@ -78,7 +80,7 @@ const handleDeleteBus =(busNumber) =>{
  alert(`Bus number ${busNumber} deleted successfully.`);
   
 };
-};
+
   return (
     <div className="dashboard">
       <Sidebar />
@@ -161,7 +163,8 @@ const handleDeleteBus =(busNumber) =>{
       <th>Route</th>
       <th>Capacity</th>
       <th>Status</th>
-    </tr>
+      <th>Action</th>
+      </tr>
   </thead>
 
   <tbody>
@@ -173,6 +176,7 @@ const handleDeleteBus =(busNumber) =>{
         <td>{bus.route}</td>
         <td>{bus.capacity}</td>
         <td>{bus.status}</td>
+        <td><button onClick={()=> handleDeleteBus(bus.busNumber)}>Delete</button></td>
       </tr>
     ))}
   </tbody>
