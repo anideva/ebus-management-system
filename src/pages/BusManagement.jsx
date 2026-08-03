@@ -7,15 +7,18 @@ import "../styles/busManagement.css";
 
 function BusManagement() {
 
-
+//STATES
   const [newBus, setNewBus] = useState({
-  busNumber: "",
+    busNumber: "",
   busName: "",
   driver: "",
   route: "",
   capacity: "",
   status: "Active",
 });
+
+ const [editingBus, setEditingBus]= useState(null);
+ 
 
     const [buses, setBuses] =useState ([
   {
@@ -46,7 +49,7 @@ function BusManagement() {
     status: "Active",
   },
 ]);
-
+//FUNCTIONS
 //HANDLING THE CHANGE 
 const handleChange = (e) => {
   //Reset the form after succesfully adding a bus
@@ -72,15 +75,45 @@ setBuses([
 };
 //handle delete bus button
 //Create a new array excluding the selected bus
-const handleDeleteBus =(busNumber) =>{
-  const filteredBuses= buses.filter(
-    (bus)=> bus.busNumber!== busNumber
+const handleDeleteBus = (busNumber) => {
+  const filteredBuses = buses.filter(
+    (bus) => bus.busNumber !== busNumber
   );
- setBuses(filteredBuses);
- alert(`Bus number ${busNumber} deleted successfully.`);
-  
+
+  setBuses(filteredBuses);
+
+  alert(`Bus number ${busNumber} deleted successfully.`);
+};
+//handle the editing of bus details
+const handleEditBus = (bus) => {
+  console.log(bus);
+  setNewBus(bus);
+  setEditingBus(bus);
 };
 
+//Update the selected bus and refresh the bus list
+const handleUpdateBus =() => {
+  const updatedBuses = buses.map((bus)=> {
+if (bus.busNumber === editingBus.busNumber){
+  return newBus;
+}
+return bus;
+  });
+  setBuses(updatedBuses)
+  setEditingBus(null);
+
+  setNewBus({
+  busNumber: "",
+  busName: "",
+  driver: "",
+  route: "",
+  capacity: "",
+  status: "Active",
+  });
+};
+
+
+//JSX 
   return (
     <div className="dashboard">
       <Sidebar />
@@ -149,9 +182,9 @@ const handleDeleteBus =(busNumber) =>{
 
   <button
    className="add-bus-btn"
-   onClick={handleAddBus}
+   onClick={editingBus? handleUpdateBus: handleAddBus}
    >
-    Add Bus
+   {editingBus ? "Update Bus": "Add Bus"}
   </button>
 </div>
         <table className="bus-table">
@@ -176,7 +209,17 @@ const handleDeleteBus =(busNumber) =>{
         <td>{bus.route}</td>
         <td>{bus.capacity}</td>
         <td>{bus.status}</td>
-        <td><button onClick={()=> handleDeleteBus(bus.busNumber)}>Delete</button></td>
+        <td>
+          <button onClick={()=> handleEditBus(bus)}>
+            Edit
+
+          </button>
+        </td>
+        <td>
+          <button onClick={()=> handleDeleteBus(bus.busNumber)}>
+          Delete
+          </button>
+          </td>
       </tr>
     ))}
   </tbody>
