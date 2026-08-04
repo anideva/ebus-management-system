@@ -71,7 +71,16 @@ const handleAddBus = () => {
 setBuses([
   ...buses,
   newBus,
+  
 ]);
+setNewBus({
+  busNumber: "",
+  busName: "",
+  driver: "",
+  route: "",
+  capacity: "",
+  status: "Active",
+});
 };
 //handle delete bus button
 //Create a new array excluding the selected bus
