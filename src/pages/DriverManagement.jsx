@@ -5,7 +5,7 @@ import "../styles/dashboard.css";
 import "../styles/busManagement.css";
 
 
-function RouteManagement() {
+function DriverManagement() {
 
 //STATES
   const [newRoute, setNewRoute] = useState({
@@ -18,8 +18,6 @@ function RouteManagement() {
   estimatedTime: "",
   status: "Active",
 });
-  
-
 
  const [editingRoute, setEditingRoute]= useState(null);
  
@@ -62,21 +60,20 @@ status: "Active"
 //FUNCTIONS
 //HANDLING THE CHANGE 
 const handleChange = (e) => {
-  //update the route from state
+  //Reset the form after succesfully adding a bus
   setNewRoute({
     ...newRoute,
     [e.target.name]: e.target.value,
   });
 };
-/// PREVENT DUBLICATE 
+/// PREVENT DUBLICATE BUS NUMBERS while adding the bus.
 const handleAddRoute = () => {
-   const routeExists = routes.some(
-    (route) => route.routeId === newRoute.routeId
-
+   const busExists = routes.some(
+    (bus) => bus.busNumber === newRoute.busNumber
   );
 
-  if (routeExists) {
-    alert("Route ID already exists!");
+  if (busExists) {
+    alert("Bus number already exists!");
     return;
   }
 setRoutes([
@@ -95,31 +92,31 @@ setNewRoute({
   status: "Active",
 });
 };
-
-//Create a new array excluding the selected route
-const handleDeleteRoute = (routeId) => {
+//handle delete bus button
+//Create a new array excluding the selected bus
+const handleDeleteRoute = (busNumber) => {
   const filteredRoutes = routes.filter(
-    (route) => route.routeId !== routeId
+    (bus) => bus.busNumber !== busNumber
   );
 
   setRoutes(filteredRoutes);
 
-  alert(`Route ID ${routeId} deleted successfully.`);
+  alert(`Bus number ${busNumber} deleted successfully.`);
 };
-//handle the editing of route details
-const handleEditRoute = (route) => {
-  console.log(route);
-  setNewRoute(route);
-  setEditingRoute(route);
+//handle the editing of bus details
+const handleEditRoute = (bus) => {
+  console.log(bus);
+  setNewRoute(bus);
+  setEditingRoute(bus);
 };
 
-//Update the selected routes
+//Update the selected bus and refresh the bus list
 const handleUpdateRoute =() => {
-  const updatedRoutes = routes.map((route)=> {
-if (route.routeId === editingRoute.routeId){
+  const updatedRoutes = routes.map((bus)=> {
+if (bus.busNumber === editingRoute.busNumber){
   return newRoute;
 }
-return route;
+return bus;
   });
   setRoutes(updatedRoutes)
   setEditingRoute(null);
@@ -148,7 +145,7 @@ return route;
         <h1>🛣️ Route Management</h1>
 
         <p>
-          Manage all routes from this page.
+          Manage all buses from this page.
         </p>
         <div className="add-bus-form">
   <h2>Add New Route</h2>
@@ -164,49 +161,34 @@ return route;
 
    <input
   type="text"
-  name="routeName"
-  placeholder="Route Name"
-  value={newRoute.routeName}
+  name="routeId"
+  placeholder="Route ID"
+  value={newRoute.routeId}
   onChange={handleChange}
 />
    <input
   type="text"
-  name="destination"
-  placeholder="Route Destination"
-  value={newRoute.destination}
+  name="routeId"
+  placeholder="Route ID"
+  value={newRoute.routeId}
   onChange={handleChange}
 />
 
    <input
   type="text"
-  name="stops"
-  placeholder="Route stops"
-  value={newRoute.stops}
+  name="routeId"
+  placeholder="Route ID"
+  value={newRoute.routeId}
   onChange={handleChange}
 />
     <input
   type="text"
-  name="distance"
-  placeholder="Route Distance"
-  value={newRoute.distance}
+  name="routeId"
+  placeholder="Route ID"
+  value={newRoute.routeId}
   onChange={handleChange}
 />
 
- <input
-  type="text"
-  name="estimatedTime"
-  placeholder="Route Time"
-  value={newRoute.estimatedTime}
-  onChange={handleChange}
-/>
-
-<input
-  type="text"
-  name="source"
-  placeholder="Source"
-  value={newRoute.source}
-  onChange={handleChange}
-/>
     <select
       name= "status"
       value={newRoute.status}
@@ -228,38 +210,36 @@ return route;
         <table className="bus-table">
   <thead>
     <tr>
-      <th>Route ID</th>
-<th>Route Name</th>
-<th>Source</th>
-<th>Destination</th>
-<th>Stops</th>
-<th>Distance</th>
-<th>Estimated Time</th>
-<th>Status</th>
-<th>Action</th>
+      <th>Bus Number</th>
+      <th>Bus Name</th>
+      <th>Driver</th>
+      <th>Route</th>
+      <th>Capacity</th>
+      <th>Status</th>
+      <th>Action</th>
       </tr>
   </thead>
 
   <tbody>
     {routes.map((route) => (
-      <tr key={route.routeId}>
-        <td>{route.routeId}</td>
-        <td>{route.routeName}</td>
-        <td>{route.source}</td>
-        <td>{route.destination}</td>
-        <td>{route.stops}</td>
-        <td>{route.distance}</td>
-        <td>{route.estimatedTime}</td>
+      <tr key={route.busNumber}>
+        <td>{route.busNumber}</td>
+        <td>{route.busName}</td>
+        <td>{route.driver}</td>
+        <td>{route.route}</td>
+        <td>{route.capacity}</td>
         <td>{route.status}</td>
         <td>
-  <button onClick={() => handleEditRoute(route)}>
-    Edit
-  </button>
+          <button onClick={()=> handleEditRoute(route)}>
+            Edit
 
-  <button onClick={() => handleDeleteRoute(route.routeId)}>
-    Delete
-  </button>
-</td>
+          </button>
+        </td>
+        <td>
+          <button onClick={()=> handleDeleteRoute(route.busNumber)}>
+          Delete
+          </button>
+          </td>
       </tr>
     ))}
   </tbody>
@@ -269,4 +249,4 @@ return route;
   );
 }
 
-export default RouteManagement;
+export default DriverManagement;

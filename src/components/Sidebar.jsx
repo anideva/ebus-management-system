@@ -17,9 +17,13 @@ function Sidebar() {
 
         <Link to="/buses">🚌 Buses</Link>
 
+         <Link to="/routes">🛣️ Route Management</Link>
+
         <Link to="/search">📍 Search Bus</Link>
 
         <Link to="/profile">👤 Profile</Link>
+
+       
 
         <button onClick={handleLogout}>🚪 Logout</button>
       </nav>

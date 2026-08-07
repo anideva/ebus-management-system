@@ -6,12 +6,24 @@ A modern React-based web application with Firebase authentication that allows us
 
 ## 🔹 Features
 
-- 🔐 User Authentication (Firebase)
-- 📝 Register & Login system
-- 🔒 Protected Dashboard (only accessible when logged in)
-- 🔄 Redirect after login
-- 🚪 Logout functionality
-- 🎨 Clean and responsive UI
+-## Features
+
+- User authentication using Firebase
+- Register and login system
+- Protected dashboard
+- Logout functionality
+- Bus Management
+  - Add buses
+  - Edit buses
+  - Delete buses
+  - Prevent duplicate bus numbers
+- Route Management
+  - Add routes
+  - Edit routes
+  - Delete routes
+  - Prevent duplicate Route IDs
+
+
 
 ---
 

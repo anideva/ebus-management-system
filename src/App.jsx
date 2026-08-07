@@ -3,6 +3,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import BusManagement from "./pages/BusManagement";
+import RouteManagement from "./pages/RouteManagement";
 
 function App() {
   return (
@@ -13,6 +14,8 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/buses" element={<BusManagement />} />
+        <Route path="/routes" element={<RouteManagement />} />
+
       </Routes>
     </BrowserRouter>
   );
