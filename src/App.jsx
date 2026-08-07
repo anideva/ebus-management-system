@@ -4,6 +4,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import BusManagement from "./pages/BusManagement";
 import RouteManagement from "./pages/RouteManagement";
+import DriverManagement from "./pages/DriverManagement";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/buses" element={<BusManagement />} />
         <Route path="/routes" element={<RouteManagement />} />
+        <Route path="/drivers" element={<DriverManagement />} />
 
       </Routes>
     </BrowserRouter>
