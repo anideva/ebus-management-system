@@ -6,6 +6,7 @@ import BusManagement from "./pages/BusManagement";
 import RouteManagement from "./pages/RouteManagement";
 import DriverManagement from "./pages/DriverManagement";
 import PassManagement from "./pages/PassManagement";
+import StudentManagement from "./pages/StudentManagement";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/routes" element={<RouteManagement />} />
         <Route path="/drivers" element={<DriverManagement />} />
         <Route path="/passes" element={<PassManagement/>} />
+        <Route path="/student-management" element={<StudentManagement/>}/>
 
       </Routes>
     </BrowserRouter>
