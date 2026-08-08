@@ -63,6 +63,16 @@ const handleAddBus = () => {
    const busExists = buses.some(
     (bus) => bus.busNumber === newBus.busNumber
   );
+  if (
+  !newBus.busNumber.trim() ||
+  !newBus.busName.trim() ||
+  !newBus.driver.trim() ||
+  !newBus.route.trim() ||
+  !newBus.capacity.trim()
+) {
+  alert("Please fill in all the fields.");
+  return;
+}
 
   if (busExists) {
     alert("Bus number already exists!");
@@ -121,6 +131,20 @@ return bus;
   });
 };
 
+const handleCancel = () => {
+
+  setEditingBus(null);
+
+  setNewBus({
+    busNumber: "",
+    busName: "",
+    driver: "",
+    route: "",
+    capacity: "",
+    status: "Active",
+  });
+
+};
 
 //JSX 
   return (
@@ -189,12 +213,29 @@ return bus;
     </select>
   </div>
 
+ <div className="button-group">
+
   <button
-   className="add-bus-btn"
-   onClick={editingBus? handleUpdateBus: handleAddBus}
-   >
-   {editingBus ? "Update Bus": "Add Bus"}
+    className="add-bus-btn"
+    onClick={
+      editingBus
+        ? handleUpdateBus
+        : handleAddBus
+    }
+  >
+    {editingBus ? "Update Bus" : "Add Bus"}
   </button>
+
+  {editingBus && (
+    <button
+      className="add-bus-btn cancel-btn"
+      onClick={handleCancel}
+    >
+      Cancel
+    </button>
+  )}
+
+</div>
 </div>
         <table className="bus-table">
   <thead>

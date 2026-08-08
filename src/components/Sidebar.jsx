@@ -18,8 +18,10 @@ function Sidebar() {
         <Link to="/buses">🚌 Buses</Link>
 
          <Link to="/routes">🛣️ Route Management</Link>
-         
+
          <Link to="/drivers">👨‍✈️ Driver Management</Link>
+
+         <Link to="/passes">🎫 Pass Management</Link>
 
         <Link to="/search">📍 Search Bus</Link>
 

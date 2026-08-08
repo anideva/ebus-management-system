@@ -5,6 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import BusManagement from "./pages/BusManagement";
 import RouteManagement from "./pages/RouteManagement";
 import DriverManagement from "./pages/DriverManagement";
+import PassManagement from "./pages/PassManagement";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/buses" element={<BusManagement />} />
         <Route path="/routes" element={<RouteManagement />} />
         <Route path="/drivers" element={<DriverManagement />} />
+        <Route path="/passes" element={<PassManagement/>} />
 
       </Routes>
     </BrowserRouter>

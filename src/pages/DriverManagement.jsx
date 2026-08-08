@@ -83,6 +83,19 @@ function DriverManagement() {
     const driverExists = drivers.some(
       (driver) => driver.driverId === newDriver.driverId
     );
+    if (
+  !newDriver.driverId.trim() ||
+  !newDriver.driverName.trim() ||
+  !newDriver.contactNumber.trim() ||
+  !newDriver.experience.trim() ||
+  !newDriver.licenseNumber.trim() ||
+  !newDriver.assignedBus.trim() ||
+  !newDriver.busType.trim() ||
+  !newDriver.capacity.trim()
+) {
+  alert("Please fill in all the fields.");
+  return;
+}
 
     if (driverExists) {
       alert("Driver ID already exists!");
@@ -169,8 +182,31 @@ function DriverManagement() {
       capacity: "",
       status: "Active",
     });
-
+ 
   };
+  // ===========================
+  // HANDLE CANCEL
+  // ===========================
+
+const handleCancel = () => {
+
+  setEditingDriver(null);
+
+  setNewDriver({
+    driverId: "",
+    driverName: "",
+    contactNumber: "",
+    experience: "",
+    licenseNumber: "",
+    assignedBus: "",
+    busType: "",
+    capacity: "",
+    status: "Active",
+  });
+
+};
+
+
 
   return (
     <div className="dashboard">
@@ -267,21 +303,30 @@ function DriverManagement() {
 
           </div>
 
-          <button
-            className="add-bus-btn"
-            onClick={
-              editingDriver
-                ? handleUpdateDriver
-                : handleAddDriver
-            }
-          >
-            {editingDriver
-              ? "Update Driver"
-              : "Add Driver"}
-          </button>
+         <div className="button-group">
 
-        </div>
+  <button
+    className="add-bus-btn"
+    onClick={
+      editingDriver
+        ? handleUpdateDriver
+        : handleAddDriver
+    }
+  >
+    {editingDriver ? "Update Driver" : "Add Driver"}
+  </button>
 
+  {editingDriver && (
+    <button
+      className="add-bus-btn cancel-btn"
+      onClick={handleCancel}
+    >
+      Cancel
+    </button>
+  )}
+
+</div>
+</div>
         <table className="bus-table">
 
           <thead>

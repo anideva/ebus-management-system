@@ -74,6 +74,18 @@ const handleAddRoute = () => {
     (route) => route.routeId === newRoute.routeId
 
   );
+  if (
+  !newRoute.routeId.trim() ||
+  !newRoute.routeName.trim() ||
+  !newRoute.source.trim() ||
+  !newRoute.destination.trim() ||
+  !newRoute.stops.trim() ||
+  !newRoute.distance.trim() ||
+  !newRoute.estimatedTime.trim()
+) {
+  alert("Please fill in all the fields.");
+  return;
+}
 
   if (routeExists) {
     alert("Route ID already exists!");
@@ -113,27 +125,68 @@ const handleEditRoute = (route) => {
   setEditingRoute(route);
 };
 
-//Update the selected routes
-const handleUpdateRoute =() => {
-  const updatedRoutes = routes.map((route)=> {
-if (route.routeId === editingRoute.routeId){
-  return newRoute;
-}
-return route;
+const handleUpdateRoute = () => {
+
+  const duplicateRoute = routes.some(
+    (route) =>
+      route.routeId === newRoute.routeId &&
+      route.routeId !== editingRoute.routeId
+  );
+
+  if (duplicateRoute) {
+    alert("Route ID already exists!");
+    return;
+  }
+
+  const updatedRoutes = routes.map((route) => {
+
+    if (route.routeId === editingRoute.routeId) {
+      return {
+        ...route,
+        ...newRoute,
+      };
+    }
+
+    return route;
+
   });
-  setRoutes(updatedRoutes)
+
+  setRoutes(updatedRoutes);
+
   setEditingRoute(null);
 
- setNewRoute({
-  routeId: "",
-  routeName: "",
-  source: "",
-  destination: "",
-  stops: "",
-  distance: "",
-  estimatedTime: "",
-  status: "Active",
-});
+  setNewRoute({
+    routeId: "",
+    routeName: "",
+    source: "",
+    destination: "",
+    stops: "",
+    distance: "",
+    estimatedTime: "",
+    status: "Active",
+  });
+
+};
+
+// ===========================
+// HANDLE CANCEL
+// ===========================
+
+const handleCancel = () => {
+
+  setEditingRoute(null);
+
+  setNewRoute({
+    routeId: "",
+    routeName: "",
+    source: "",
+    destination: "",
+    stops: "",
+    distance: "",
+    estimatedTime: "",
+    status: "Active",
+  });
+
 };
 
 
@@ -218,12 +271,29 @@ return route;
     </select>
   </div>
 
+ <div className="button-group">
+
   <button
-   className="add-bus-btn"
-   onClick={editingRoute ? handleUpdateRoute: handleAddRoute}
-   >
-   {editingRoute ? "Update Route": "Add Route"}
+    className="add-bus-btn"
+    onClick={
+      editingRoute
+        ? handleUpdateRoute
+        : handleAddRoute
+    }
+  >
+    {editingRoute ? "Update Route" : "Add Route"}
   </button>
+
+  {editingRoute && (
+    <button
+      className="add-bus-btn cancel-btn"
+      onClick={handleCancel}
+    >
+      Cancel
+    </button>
+  )}
+
+</div>
 </div>
         <table className="bus-table">
   <thead>
