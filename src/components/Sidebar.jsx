@@ -21,6 +21,8 @@ function Sidebar() {
 
         <Link to="/student-management">🎓 Student Management</Link>
 
+        <Link to="/ticket-management">🎟️ Ticket Management</Link>
+
         <Link to="/drivers">👨‍✈️ Driver Management</Link>
 
         <Link to="/passes">🎫 Pass Management</Link>
