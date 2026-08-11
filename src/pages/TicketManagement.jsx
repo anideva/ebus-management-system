@@ -42,7 +42,7 @@ function TicketManagement() {
       busNumber: "AS02CD5678",
       routeName: "Guwahati - Nagaon",
       journeyDate: "2026-08-13",
-      seatNumber: "B5",
+      seatNumber: "B2",
       fare: "250",
       status: "Booked",
     },
@@ -76,9 +76,40 @@ function TicketManagement() {
   },
 ]);
 
+// ===========================
+// GENERATE SEATS
+// ===========================
+const generateSeats = (capacity) => {
+  const seats = [];
+
+  for (let i = 0; i < capacity; i++) {
+    const row = String.fromCharCode(65 + Math.floor(i / 4));
+    const seat = (i % 4) + 1;
+
+    seats.push(`${row}${seat}`);
+  }
+
+  return seats;
+};
+
+// ===========================
+// CHECK SEAT AVAILABILITY
+// ===========================
+
+const isSeatBooked = (seat) => {
+  return tickets.some(
+    (ticket) =>
+      ticket.busNumber === newTicket.busNumber &&
+      ticket.journeyDate === newTicket.journeyDate &&
+      ticket.seatNumber === seat &&
+      ticket.status === "Booked"
+  );
+};
+
   // ===========================
   // HANDLE INPUT CHANGE
   // ===========================
+
 
   const handleChange = (e) => {
 
@@ -133,6 +164,21 @@ function TicketManagement() {
       alert("Ticket ID already exists!");
       return;
     }
+
+    const seatExists = tickets.some(
+  (ticket) =>
+    ticket.busNumber === newTicket.busNumber &&
+    ticket.journeyDate === newTicket.journeyDate &&
+    ticket.seatNumber === newTicket.seatNumber &&
+    ticket.status === "Booked"
+);
+
+if (seatExists) {
+  alert(
+    "This seat is already booked for the selected bus and date!"
+  );
+  return;
+}
 
     setTickets([
       ...tickets,
@@ -333,14 +379,32 @@ function TicketManagement() {
               onChange={handleChange}
             />
 
-            <input
-              type="text"
-              name="seatNumber"
-              placeholder="Seat Number"
-              value={newTicket.seatNumber}
-              onChange={handleChange}
-            />
+           <select
+  name="seatNumber"
+  value={newTicket.seatNumber}
+  onChange={handleChange}
+  disabled={!newTicket.busNumber || !newTicket.journeyDate}
+>
+  <option value="">Select Seat</option>
 
+  {newTicket.busNumber &&
+    newTicket.journeyDate &&
+    generateSeats(
+      buses.find(
+        (bus) => bus.busNumber === newTicket.busNumber
+      )?.capacity || 0
+    ).map((seat) => (
+      <option
+        key={seat}
+        value={seat}
+        disabled={isSeatBooked(seat)}
+      >
+        {isSeatBooked(seat)
+          ? `${seat} - Booked`
+          : seat}
+      </option>
+    ))}
+</select>
             <input
               type="number"
               name="fare"
