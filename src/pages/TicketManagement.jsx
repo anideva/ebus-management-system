@@ -58,18 +58,54 @@ function TicketManagement() {
       status: "Cancelled",
     },
   ]);
+  const [buses] = useState([
+  {
+    busNumber: "AS01AB1234",
+    routeName: "Guwahati - Tezpur",
+    capacity: 45,
+  },
+  {
+    busNumber: "AS02CD5678",
+    routeName: "Guwahati - Nagaon",
+    capacity: 40,
+  },
+  {
+    busNumber: "AS03EF9012",
+    routeName: "Guwahati - Shillong",
+    capacity: 50,
+  },
+]);
 
   // ===========================
   // HANDLE INPUT CHANGE
   // ===========================
 
   const handleChange = (e) => {
+
+  const { name, value } = e.target;
+
+  if (name === "busNumber") {
+
+    const selectedBus = buses.find(
+      (bus) => bus.busNumber === value
+    );
+
     setNewTicket({
       ...newTicket,
-      [e.target.name]: e.target.value,
+      busNumber: value,
+      routeName: selectedBus
+        ? selectedBus.routeName
+        : "",
     });
-  };
 
+    return;
+  }
+
+  setNewTicket({
+    ...newTicket,
+    [name]: value,
+  });
+};
   // ===========================
   // ADD TICKET
   // ===========================
@@ -150,46 +186,62 @@ function TicketManagement() {
 
   const handleUpdateTicket = () => {
 
-    const duplicateTicket = tickets.some(
-      (ticket) =>
-        ticket.ticketId === newTicket.ticketId &&
-        ticket.ticketId !== editingTicket.ticketId
-    );
+  const duplicateTicket = tickets.some(
+    (ticket) =>
+      ticket.ticketId === newTicket.ticketId &&
+      ticket.ticketId !== editingTicket.ticketId
+  );
 
-    if (duplicateTicket) {
-      alert("Ticket ID already exists!");
-      return;
+  if (duplicateTicket) {
+    alert("Ticket ID already exists!");
+    return;
+  }
+
+  const seatExists = tickets.some(
+    (ticket) =>
+      ticket.ticketId !== editingTicket.ticketId &&
+      ticket.busNumber === newTicket.busNumber &&
+      ticket.journeyDate === newTicket.journeyDate &&
+      ticket.seatNumber === newTicket.seatNumber &&
+      ticket.status === "Booked"
+  );
+
+  if (seatExists) {
+    alert(
+      "This seat is already booked for the selected bus and date!"
+    );
+    return;
+  }
+
+  const updatedTickets = tickets.map((ticket) => {
+
+    if (ticket.ticketId === editingTicket.ticketId) {
+      return {
+        ...ticket,
+        ...newTicket,
+      };
     }
 
-    const updatedTickets = tickets.map((ticket) => {
+    return ticket;
 
-      if (ticket.ticketId === editingTicket.ticketId) {
-        return {
-          ...ticket,
-          ...newTicket,
-        };
-      }
+  });
 
-      return ticket;
+  setTickets(updatedTickets);
 
-    });
+  setEditingTicket(null);
 
-    setTickets(updatedTickets);
+  setNewTicket({
+    ticketId: "",
+    passengerName: "",
+    busNumber: "",
+    routeName: "",
+    journeyDate: "",
+    seatNumber: "",
+    fare: "",
+    status: "Booked",
+  });
 
-    setEditingTicket(null);
-
-    setNewTicket({
-      ticketId: "",
-      passengerName: "",
-      busNumber: "",
-      routeName: "",
-      journeyDate: "",
-      seatNumber: "",
-      fare: "",
-      status: "Booked",
-    });
-
-  };
+};
 
   // ===========================
   // HANDLE CANCEL
@@ -249,21 +301,30 @@ function TicketManagement() {
               onChange={handleChange}
             />
 
-            <input
-              type="text"
-              name="busNumber"
-              placeholder="Bus Number"
-              value={newTicket.busNumber}
-              onChange={handleChange}
-            />
+            <select
+  name="busNumber"
+  value={newTicket.busNumber}
+  onChange={handleChange}
+>
+  <option value="">Select Bus</option>
+
+  {buses.map((bus) => (
+    <option
+      key={bus.busNumber}
+      value={bus.busNumber}
+    >
+      {bus.busNumber}
+    </option>
+  ))}
+</select>
 
             <input
-              type="text"
-              name="routeName"
-              placeholder="Route Name"
-              value={newTicket.routeName}
-              onChange={handleChange}
-            />
+  type="text"
+  name="routeName"
+  placeholder="Route Name"
+  value={newTicket.routeName}
+  readOnly
+/>
 
             <input
               type="date"
