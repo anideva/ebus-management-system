@@ -20,6 +20,29 @@ function PaymentManagement() {
     status: "Paid",
   });
 
+  const [tickets] = useState([
+  {
+    ticketId: "T001",
+    passengerName: "Rahul Sharma",
+    amount: "350",
+  },
+  {
+    ticketId: "T002",
+    passengerName: "Priya Das",
+    amount: "250",
+  },
+  {
+    ticketId: "T003",
+    passengerName: "Arjun Bora",
+    amount: "450",
+  },
+    {
+    ticketId: "T004",
+    passengerName: "Neha Sharma",
+    amount: "300",
+  },
+
+]);
   const [editingPayment, setEditingPayment] = useState(null);
 
   const [payments, setPayments] = useState([
@@ -53,18 +76,42 @@ function PaymentManagement() {
       transactionId: "TXN100003",
       status: "Pending",
     },
+  
   ]);
 
   // ===========================
   // HANDLE INPUT CHANGE
   // ===========================
 
-  const handleChange = (e) => {
+ const handleChange = (e) => {
+
+  const { name, value } = e.target;
+
+  if (name === "ticketId") {
+
+    const selectedTicket = tickets.find(
+      (ticket) => ticket.ticketId === value
+    );
+
     setNewPayment({
       ...newPayment,
-      [e.target.name]: e.target.value,
+      ticketId: value,
+      passengerName: selectedTicket
+        ? selectedTicket.passengerName
+        : "",
+      amount: selectedTicket
+        ? selectedTicket.amount
+        : "",
     });
-  };
+
+    return;
+  }
+
+  setNewPayment({
+    ...newPayment,
+    [name]: value,
+  });
+};
 
   // ===========================
   // ADD PAYMENT
@@ -91,6 +138,27 @@ function PaymentManagement() {
       alert("Payment ID already exists!");
       return;
     }
+
+    const transactionExists = payments.some(
+  (payment) =>
+    payment.transactionId === newPayment.transactionId
+);
+
+if (transactionExists) {
+  alert("Transaction ID already exists!");
+  return;
+}
+
+    const ticketPaymentExists = payments.some(
+    (payment) =>
+      payment.ticketId === newPayment.ticketId &&
+      payment.status !== "Refunded"
+  );
+
+  if (ticketPaymentExists) {
+    alert("A payment already exists for this ticket!");
+    return;
+  }
 
     setPayments([
       ...payments,
@@ -153,6 +221,18 @@ function PaymentManagement() {
       alert("Payment ID already exists!");
       return;
     }
+      const duplicateTransaction = payments.some(
+    (payment) =>
+      payment.transactionId === newPayment.transactionId &&
+      payment.paymentId !== editingPayment.paymentId
+  );
+
+  if (duplicateTransaction) {
+    alert("Transaction ID already exists!");
+    return;
+  }
+
+    
 
     const updatedPayments = payments.map((payment) => {
 
@@ -231,13 +311,22 @@ function PaymentManagement() {
               onChange={handleChange}
             />
 
-            <input
-              type="text"
-              name="ticketId"
-              placeholder="Ticket ID"
-              value={newPayment.ticketId}
-              onChange={handleChange}
-            />
+            <select
+  name="ticketId"
+  value={newPayment.ticketId}
+  onChange={handleChange}
+>
+  <option value="">Select Ticket</option>
+
+  {tickets.map((ticket) => (
+  <option
+    key={ticket.ticketId}
+    value={ticket.ticketId}
+  >
+    {ticket.ticketId}
+  </option>
+))}
+</select>
 
             <input
               type="text"
@@ -245,6 +334,7 @@ function PaymentManagement() {
               placeholder="Passenger Name"
               value={newPayment.passengerName}
               onChange={handleChange}
+              readOnly
             />
 
             <input
@@ -253,6 +343,7 @@ function PaymentManagement() {
               placeholder="Amount"
               value={newPayment.amount}
               onChange={handleChange}
+              readOnly
             />
 
             <select
