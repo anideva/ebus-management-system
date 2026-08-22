@@ -1,4 +1,4 @@
-import Bus from "../models/Bus.js";
+import Bus from "../models/bus.js";
 
 export const getBuses = async (req, res) => {
   try {
