@@ -8,12 +8,22 @@ const busSchema = new mongoose.Schema(
       unique: true,
     },
 
+    busName: {
+      type: String,
+      required: true,
+    },
+
     busType: {
       type: String,
       required: true,
     },
 
-    routeName: {
+    driver: {
+      type: String,
+      required: true,
+    },
+
+    route: {
       type: String,
       required: true,
     },
@@ -30,7 +40,7 @@ const busSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["Active", "Inactive"],
+      enum: ["Active", "Maintenance"],
       default: "Active",
     },
   },

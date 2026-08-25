@@ -25,3 +25,24 @@ export const createBus = async (req, res) => {
     });
   }
 };
+export const deleteBus = async (req, res) => {
+  try {
+    const deletedBus = await Bus.findByIdAndDelete(req.params.id);
+
+    if (!deletedBus) {
+      return res.status(404).json({
+        message: "Bus not found",
+      });
+    }
+
+    res.status(200).json({
+      message: "Bus deleted successfully",
+      bus: deletedBus,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to delete bus",
+      error: error.message,
+    });
+  }
+};

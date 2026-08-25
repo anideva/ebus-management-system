@@ -1,4 +1,4 @@
-import {useState} from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import "../styles/dashboard.css";
@@ -8,47 +8,42 @@ import "../styles/busManagement.css";
 function BusManagement() {
 
 //STATES
-  const [newBus, setNewBus] = useState({
-    busNumber: "",
+ // STATES
+
+const [newBus, setNewBus] = useState({
+  busNumber: "",
   busName: "",
+  busType: "",
   driver: "",
   route: "",
   capacity: "",
+  fare: "",
   status: "Active",
 });
 
- const [editingBus, setEditingBus]= useState(null);
- 
+const [editingBus, setEditingBus] = useState(null);
 
-    const [buses, setBuses] =useState ([
-  {
-    id: 1,
-    busNumber: "AS01AB1234",
-    busName: "Assam Express",
-    driver: "Rahul Sharma",
-    route: "Guwahati → Tezpur",
-    capacity: 45,
-    status: "Active",
-  },
-  {
-    id: 2,
-    busNumber: "AS02CD5678",
-    busName: "City Rider",
-    driver: "Amit Das",
-    route: "Guwahati → Nagaon",
-    capacity: 40,
-    status: "Maintenance",
-  },
-  {
-    id: 3,
-    busNumber: "AS03EF9012",
-    busName: "Hill Traveler",
-    driver: "Sanjay Bora",
-    route: "Guwahati → Shillong",
-    capacity: 50,
-    status: "Active",
-  },
-]);
+const [buses, setBuses] = useState([]);
+
+ useEffect(() => {
+  const fetchBuses = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/buses");
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch buses");
+      }
+
+      const data = await response.json();
+
+      setBuses(data);
+    } catch (error) {
+      console.error("Error fetching buses:", error);
+    }
+  };
+
+  fetchBuses();
+}, []);
 //FUNCTIONS
 //HANDLING THE CHANGE 
 const handleChange = (e) => {
@@ -59,49 +54,87 @@ const handleChange = (e) => {
   });
 };
 /// PREVENT DUBLICATE BUS NUMBERS while adding the bus.
-const handleAddBus = () => {
-   const busExists = buses.some(
-    (bus) => bus.busNumber === newBus.busNumber
-  );
+const handleAddBus = async () => {
   if (
-  !newBus.busNumber.trim() ||
-  !newBus.busName.trim() ||
-  !newBus.driver.trim() ||
-  !newBus.route.trim() ||
-  !newBus.capacity.trim()
-) {
-  alert("Please fill in all the fields.");
-  return;
-}
-
-  if (busExists) {
-    alert("Bus number already exists!");
+    !newBus.busNumber.trim() ||
+    !newBus.busName.trim() ||
+    !newBus.busType.trim() ||
+    !newBus.driver.trim() ||
+    !newBus.route.trim() ||
+    !newBus.capacity ||
+    !newBus.fare
+  ) {
+    alert("Please fill in all the fields.");
     return;
   }
-setBuses([
-  ...buses,
-  newBus,
-  
-]);
-setNewBus({
-  busNumber: "",
-  busName: "",
-  driver: "",
-  route: "",
-  capacity: "",
-  status: "Active",
-});
+
+  try {
+    const response = await fetch("http://localhost:5000/api/buses", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(newBus),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to create bus");
+    }
+
+    setBuses([...buses, data]);
+
+    setNewBus({
+      busNumber: "",
+      busName: "",
+      busType: "",
+      driver: "",
+      route: "",
+      capacity: "",
+      fare: "",
+      status: "Active",
+    });
+
+    alert("Bus added successfully!");
+  } catch (error) {
+    console.error("Error adding bus:", error);
+    alert(error.message);
+  }
 };
 //handle delete bus button
 //Create a new array excluding the selected bus
-const handleDeleteBus = (busNumber) => {
-  const filteredBuses = buses.filter(
-    (bus) => bus.busNumber !== busNumber
-  );
+const handleDeleteBus = async (id, busNumber) => {
+  const confirmed = window.confirm(
+  `Are you sure you want to delete bus ${busNumber}?`
+);
 
-  setBuses(filteredBuses);
+if (!confirmed) {
+  return;
+}
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/buses/${id}`,
+      {
+        method: "DELETE",
+      }
+    );
 
-  alert(`Bus number ${busNumber} deleted successfully.`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to delete bus");
+    }
+
+    setBuses(
+      buses.filter((bus) => bus._id !== id)
+    );
+
+    alert(`Bus number ${busNumber} deleted successfully.`);
+  } catch (error) {
+    console.error("Error deleting bus:", error);
+    alert(error.message);
+  }
 };
 //handle the editing of bus details
 const handleEditBus = (bus) => {
@@ -178,6 +211,22 @@ const handleCancel = () => {
   value={newBus.busName}
   onChange={handleChange}
 />
+
+ <input
+    type="text"
+    name="busType"
+    placeholder="Bus Type"
+    value={newBus.busType}
+    onChange={handleChange}
+  />
+
+  <input
+    type="number"
+    name="fare"
+    placeholder="Fare"
+    value={newBus.fare}
+    onChange={handleChange}
+    />
     <input
   type="text"
   name="driver"
@@ -266,9 +315,9 @@ const handleCancel = () => {
           </button>
         </td>
         <td>
-          <button onClick={()=> handleDeleteBus(bus.busNumber)}>
-          Delete
-          </button>
+          <button onClick={() => handleDeleteBus(bus._id, bus.busNumber)}>
+  Delete
+</button>
           </td>
       </tr>
     ))}
