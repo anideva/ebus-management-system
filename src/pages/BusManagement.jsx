@@ -144,39 +144,63 @@ const handleEditBus = (bus) => {
 };
 
 //Update the selected bus and refresh the bus list
-const handleUpdateBus =() => {
-  const updatedBuses = buses.map((bus)=> {
-if (bus.busNumber === editingBus.busNumber){
-  return newBus;
-}
-return bus;
-  });
-  setBuses(updatedBuses)
-  setEditingBus(null);
+const handleUpdateBus = async () => {
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/buses/${editingBus._id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newBus),
+      }
+    );
 
-  setNewBus({
-  busNumber: "",
-  busName: "",
-  driver: "",
-  route: "",
-  capacity: "",
-  status: "Active",
-  });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to update bus");
+    }
+
+    setBuses(
+      buses.map((bus) =>
+        bus._id === data._id ? data : bus
+      )
+    );
+
+    setEditingBus(null);
+
+    setNewBus({
+      busNumber: "",
+      busName: "",
+      busType: "",
+      driver: "",
+      route: "",
+      capacity: "",
+      fare: "",
+      status: "Active",
+    });
+
+    alert("Bus updated successfully!");
+  } catch (error) {
+    console.error("Error updating bus:", error);
+    alert(error.message);
+  }
 };
-
 const handleCancel = () => {
-
   setEditingBus(null);
 
   setNewBus({
     busNumber: "",
     busName: "",
+    busType: "",
     driver: "",
     route: "",
     capacity: "",
+    fare: "",
     status: "Active",
   });
-
 };
 
 //JSX 
