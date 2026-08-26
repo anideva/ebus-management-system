@@ -46,3 +46,28 @@ export const deleteBus = async (req, res) => {
     });
   }
 };
+export const updateBus = async (req, res) => {
+  try {
+    const updatedBus = await Bus.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        returnDocument: "after",
+        runValidators: true,
+      }
+    );
+
+    if (!updatedBus) {
+      return res.status(404).json({
+        message: "Bus not found",
+      });
+    }
+
+    res.status(200).json(updatedBus);
+  } catch (error) {
+    res.status(400).json({
+      message: "Failed to update bus",
+      error: error.message,
+    });
+  }
+};
