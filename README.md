@@ -23,6 +23,13 @@ A modern React-based web application with Firebase authentication that allows us
   - Delete routes
   - Prevent duplicate Route IDs
 
+- Driver Management
+ - Add new drivers
+ - Edit driver information
+ - Delete drivers
+ - Prevent duplicate Driver IDs
+ - Manage license number, assigned bus, experience, bus type, capacity, and status
+
 
 
 ---

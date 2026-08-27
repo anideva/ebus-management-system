@@ -1,4 +1,4 @@
-import {useState} from "react";
+import {useState, useEffect} from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import "../styles/dashboard.css";
@@ -24,41 +24,26 @@ function RouteManagement() {
  const [editingRoute, setEditingRoute]= useState(null);
  
 
-    const [routes, setRoutes] =useState ([
- {
-  id: 1,
-  routeId: "R001",
-  routeName: "Guwahati - Tezpur",
-  source: "Guwahati",
-  destination: "Tezpur",
-  stops: "Jagiroad, Raha, Nagaon, Kaliabor",
-  distance: "185 km",
-  estimatedTime: "4 Hours",
-  status: "Active",
-},
-{ 
-id: 2,
-routeId: "R002",
-routeName: "Guwahati - Nagaon",
-source: "Guwahati",
-destination: "Nagaon",
-stops: "Jagiroad, Raha",
-distance: "125 km",
-estimatedTime: "3 Hours",
-status: "Active",
-},
-{
-  id: 3,
-routeId: "R003",
-routeName: "Guwahati - Shillong",
-source: "Guwahati",
-destination: "Shillong",
-stops: "Jorabat, Nongpoh",
-distance: "100 km",
-estimatedTime: "3 Hours",
-status: "Active"
-},
-]);
+    const [routes, setRoutes] =useState ([]);
+    useEffect(() => {
+  const fetchRoutes = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/routes");
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch routes");
+      }
+
+      const data = await response.json();
+
+      setRoutes(data);
+    } catch (error) {
+      console.error("Error fetching routes:", error);
+    }
+  };
+
+  fetchRoutes();
+}, []);
 //FUNCTIONS
 //HANDLING THE CHANGE 
 const handleChange = (e) => {
@@ -69,68 +54,122 @@ const handleChange = (e) => {
   });
 };
 /// PREVENT DUBLICATE 
-const handleAddRoute = () => {
-   const routeExists = routes.some(
-    (route) => route.routeId === newRoute.routeId
-
-  );
+const handleAddRoute = async () => {
   if (
-  !newRoute.routeId.trim() ||
-  !newRoute.routeName.trim() ||
-  !newRoute.source.trim() ||
-  !newRoute.destination.trim() ||
-  !newRoute.stops.trim() ||
-  !newRoute.distance.trim() ||
-  !newRoute.estimatedTime.trim()
-) {
-  alert("Please fill in all the fields.");
-  return;
-}
+    !newRoute.routeId.trim() ||
+    !newRoute.routeName.trim() ||
+    !newRoute.source.trim() ||
+    !newRoute.destination.trim() ||
+    !newRoute.stops.trim() ||
+    !newRoute.distance.trim() ||
+    !newRoute.estimatedTime.trim()
+  ) {
+    alert("Please fill in all the fields.");
+    return;
+  }
+
+  const routeExists = routes.some(
+    (route) => route.routeId === newRoute.routeId
+  );
 
   if (routeExists) {
     alert("Route ID already exists!");
     return;
   }
-setRoutes([
-  ...routes,
-  newRoute,
-  
-]);
-setNewRoute({
-  routeId: "",
-  routeName: "",
-  source: "",
-  destination: "",
-  stops: "",
-  distance: "",
-  estimatedTime: "",
-  status: "Active",
-});
+
+  try {
+    const response = await fetch("http://localhost:5000/api/routes", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...newRoute,
+        stops: newRoute.stops
+          .split(",")
+          .map((stop) => stop.trim()),
+        distance: Number(newRoute.distance),
+        estimatedTime: Number(newRoute.estimatedTime),
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to create route");
+    }
+
+    setRoutes([...routes, data]);
+
+    setNewRoute({
+      routeId: "",
+      routeName: "",
+      source: "",
+      destination: "",
+      stops: "",
+      distance: "",
+      estimatedTime: "",
+      status: "Active",
+    });
+
+    alert("Route added successfully!");
+  } catch (error) {
+    console.error("Error adding route:", error);
+    alert(error.message);
+  }
 };
 
 //Create a new array excluding the selected route
-const handleDeleteRoute = (routeId) => {
-  const filteredRoutes = routes.filter(
-    (route) => route.routeId !== routeId
+const handleDeleteRoute = async (id, routeId) => {
+  const confirmed = window.confirm(
+    `Are you sure you want to delete route ${routeId}?`
   );
 
-  setRoutes(filteredRoutes);
+  if (!confirmed) {
+    return;
+  }
 
-  alert(`Route ID ${routeId} deleted successfully.`);
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/routes/${id}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to delete route");
+    }
+
+    setRoutes(
+      routes.filter((route) => route._id !== id)
+    );
+
+    alert(`Route ID ${routeId} deleted successfully.`);
+  } catch (error) {
+    console.error("Error deleting route:", error);
+    alert(error.message);
+  }
 };
 //handle the editing of route details
 const handleEditRoute = (route) => {
   console.log(route);
-  setNewRoute(route);
+
+  setNewRoute({
+    ...route,
+    stops: route.stops.join(", "),
+  });
+
   setEditingRoute(route);
 };
 
-const handleUpdateRoute = () => {
-
+const handleUpdateRoute = async () => {
   const duplicateRoute = routes.some(
     (route) =>
       route.routeId === newRoute.routeId &&
-      route.routeId !== editingRoute.routeId
+      route._id !== editingRoute._id
   );
 
   if (duplicateRoute) {
@@ -138,36 +177,56 @@ const handleUpdateRoute = () => {
     return;
   }
 
-  const updatedRoutes = routes.map((route) => {
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/routes/${editingRoute._id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...newRoute,
+          stops: newRoute.stops
+            .split(",")
+            .map((stop) => stop.trim()),
+          distance: Number(newRoute.distance),
+          estimatedTime: Number(newRoute.estimatedTime),
+        }),
+      }
+    );
 
-    if (route.routeId === editingRoute.routeId) {
-      return {
-        ...route,
-        ...newRoute,
-      };
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to update route");
     }
 
-    return route;
+    setRoutes(
+      routes.map((route) =>
+        route._id === editingRoute._id ? data : route
+      )
+    );
 
-  });
+    setEditingRoute(null);
 
-  setRoutes(updatedRoutes);
+    setNewRoute({
+      routeId: "",
+      routeName: "",
+      source: "",
+      destination: "",
+      stops: "",
+      distance: "",
+      estimatedTime: "",
+      status: "Active",
+    });
 
-  setEditingRoute(null);
-
-  setNewRoute({
-    routeId: "",
-    routeName: "",
-    source: "",
-    destination: "",
-    stops: "",
-    distance: "",
-    estimatedTime: "",
-    status: "Active",
-  });
-
+    alert("Route updated successfully!");
+  } catch (error) {
+    console.error("Error updating route:", error);
+    alert(error.message);
+  }
 };
-
 // ===========================
 // HANDLE CANCEL
 // ===========================
@@ -317,7 +376,7 @@ const handleCancel = () => {
         <td>{route.routeName}</td>
         <td>{route.source}</td>
         <td>{route.destination}</td>
-        <td>{route.stops}</td>
+        <td>{route.stops.join(", ")}</td>
         <td>{route.distance}</td>
         <td>{route.estimatedTime}</td>
         <td>{route.status}</td>
@@ -326,9 +385,11 @@ const handleCancel = () => {
     Edit
   </button>
 
-  <button onClick={() => handleDeleteRoute(route.routeId)}>
-    Delete
-  </button>
+  <button
+  onClick={() => handleDeleteRoute(route._id, route.routeId)}
+>
+  Delete
+</button>
 </td>
       </tr>
     ))}

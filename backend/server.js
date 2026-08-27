@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import busRoutes from "./routes/busRoutes.js";
+import routeRoutes from "./routes/routeRoutes.js";
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api/buses", busRoutes);
+app.use("/api/routes", routeRoutes);
 
 app.get("/", (req, res) => {
   res.json({
