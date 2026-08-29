@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import "../styles/dashboard.css";
@@ -23,41 +23,26 @@ function TicketManagement() {
 
   const [editingTicket, setEditingTicket] = useState(null);
 
-  const [tickets, setTickets] = useState([
-    {
-      id: 1,
-      ticketId: "T001",
-      passengerName: "Rahul Sharma",
-      busNumber: "AS01AB1234",
-      routeName: "Guwahati - Tezpur",
-      journeyDate: "2026-08-12",
-      seatNumber: "A1",
-      fare: "350",
-      status: "Booked",
-    },
-    {
-      id: 2,
-      ticketId: "T002",
-      passengerName: "Priya Das",
-      busNumber: "AS02CD5678",
-      routeName: "Guwahati - Nagaon",
-      journeyDate: "2026-08-13",
-      seatNumber: "B2",
-      fare: "250",
-      status: "Booked",
-    },
-    {
-      id: 3,
-      ticketId: "T003",
-      passengerName: "Arjun Bora",
-      busNumber: "AS03EF9012",
-      routeName: "Guwahati - Shillong",
-      journeyDate: "2026-08-15",
-      seatNumber: "C3",
-      fare: "450",
-      status: "Cancelled",
-    },
-  ]);
+  const [tickets, setTickets] = useState([]);
+  useEffect(() => {
+  const fetchTickets = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/tickets");
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch tickets");
+      }
+
+      const data = await response.json();
+
+      setTickets(data);
+    } catch (error) {
+      console.error("Error fetching tickets:", error);
+    }
+  };
+
+  fetchTickets();
+}, []);
   const [buses] = useState([
   {
     busNumber: "AS01AB1234",
@@ -141,49 +126,58 @@ const isSeatBooked = (seat) => {
   // ADD TICKET
   // ===========================
 
-  const handleAddTicket = () => {
-
-    if (
-      !newTicket.ticketId.trim() ||
-      !newTicket.passengerName.trim() ||
-      !newTicket.busNumber.trim() ||
-      !newTicket.routeName.trim() ||
-      !newTicket.journeyDate ||
-      !newTicket.seatNumber.trim() ||
-      !newTicket.fare.trim()
-    ) {
-      alert("Please fill in all the fields.");
-      return;
-    }
-
-    const ticketExists = tickets.some(
-      (ticket) => ticket.ticketId === newTicket.ticketId
-    );
-
-    if (ticketExists) {
-      alert("Ticket ID already exists!");
-      return;
-    }
-
-    const seatExists = tickets.some(
-  (ticket) =>
-    ticket.busNumber === newTicket.busNumber &&
-    ticket.journeyDate === newTicket.journeyDate &&
-    ticket.seatNumber === newTicket.seatNumber &&
-    ticket.status === "Booked"
-);
-
-if (seatExists) {
-  alert(
-    "This seat is already booked for the selected bus and date!"
+  const handleAddTicket = async () => {
+  const ticketExists = tickets.some(
+    (ticket) => ticket.ticketId === newTicket.ticketId
   );
-  return;
-}
 
-    setTickets([
-      ...tickets,
-      newTicket,
-    ]);
+  const seatAlreadyBooked = tickets.some(
+    (ticket) =>
+      ticket.busNumber === newTicket.busNumber &&
+      ticket.journeyDate === newTicket.journeyDate &&
+      ticket.seatNumber === newTicket.seatNumber  &&
+      ticket.status === "Confirmed"
+  );
+
+  if (
+    !newTicket.ticketId.trim() ||
+    !newTicket.passengerName.trim() ||
+    !newTicket.busNumber ||
+    !newTicket.routeName ||
+    !newTicket.journeyDate ||
+    !newTicket.seatNumber ||
+    !newTicket.fare
+  ) {
+    alert("Please fill in all the fields.");
+    return;
+  }
+
+  if (ticketExists) {
+    alert("Ticket ID already exists!");
+    return;
+  }
+
+  if (seatAlreadyBooked) {
+    alert("This seat is already booked for this bus and journey date.");
+    return;
+  }
+
+  try {
+    const response = await fetch("http://localhost:5000/api/tickets", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(newTicket),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || data.message || "Failed to create ticket");
+    }
+
+    setTickets([...tickets, data]);
 
     setNewTicket({
       ticketId: "",
@@ -193,44 +187,89 @@ if (seatExists) {
       journeyDate: "",
       seatNumber: "",
       fare: "",
-      status: "Booked",
+      status: "Confirmed",
     });
 
-    setEditingTicket(null);
-  };
-
+    alert("Ticket booked successfully!");
+  } catch (error) {
+    console.error("Error creating ticket:", error);
+    alert(error.message);
+  }
+};
   // ===========================
   // DELETE TICKET
   // ===========================
 
-  const handleDeleteTicket = (ticketId) => {
+ const handleDeleteTicket = async (ticketId) => {
+  const confirmed = window.confirm(
+    `Are you sure you want to delete ticket ${ticketId}?`
+  );
 
-    const filteredTickets = tickets.filter(
-      (ticket) => ticket.ticketId !== ticketId
+  if (!confirmed) {
+    return;
+  }
+
+  const ticketToDelete = tickets.find(
+    (ticket) => ticket.ticketId === ticketId
+  );
+
+  if (!ticketToDelete) {
+    alert("Ticket not found.");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/tickets/${ticketToDelete._id}`,
+      {
+        method: "DELETE",
+      }
     );
 
-    setTickets(filteredTickets);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || data.message || "Failed to delete ticket"
+      );
+    }
+
+    setTickets(
+      tickets.filter(
+        (ticket) => ticket._id !== ticketToDelete._id
+      )
+    );
 
     alert(`Ticket ID ${ticketId} deleted successfully.`);
-  };
-
-  // ===========================
+  } catch (error) {
+    console.error("Error deleting ticket:", error);
+    alert(error.message);
+  }
+};
+// ===========================
   // EDIT TICKET
   // ===========================
+const handleEditTicket = (ticket) => {
+  console.log(ticket);
 
-  const handleEditTicket = (ticket) => {
+  setNewTicket({
+    ticketId: ticket.ticketId,
+    passengerName: ticket.passengerName,
+    busNumber: ticket.busNumber,
+    routeName: ticket.routeName,
+    journeyDate: ticket.journeyDate,
+    seatNumber: ticket.seatNumber,
+    fare: ticket.fare,
+    status: ticket.status,
+  });
 
-    setNewTicket(ticket);
-
-    setEditingTicket(ticket);
-
-  };
-
+  setEditingTicket(ticket);
+};
   // ===========================
   // UPDATE TICKET
   // ===========================
 
-  const handleUpdateTicket = () => {
+  const handleUpdateTicket = async () => {
 
   const duplicateTicket = tickets.some(
     (ticket) =>
@@ -259,20 +298,50 @@ if (seatExists) {
     return;
   }
 
-  const updatedTickets = tickets.map((ticket) => {
-
-    if (ticket.ticketId === editingTicket.ticketId) {
-      return {
-        ...ticket,
-        ...newTicket,
-      };
+ try {
+  const response = await fetch(
+    `http://localhost:5000/api/tickets/${editingTicket._id}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(newTicket),
     }
+  );
 
-    return ticket;
+  const data = await response.json();
 
+  if (!response.ok) {
+    throw new Error(
+      data.error || data.message || "Failed to update ticket"
+    );
+  }
+
+  setTickets(
+    tickets.map((ticket) =>
+      ticket._id === editingTicket._id ? data : ticket
+    )
+  );
+
+  setEditingTicket(null);
+
+  setNewTicket({
+    ticketId: "",
+    passengerName: "",
+    busNumber: "",
+    routeName: "",
+    journeyDate: "",
+    seatNumber: "",
+    fare: "",
+    status: "Booked",
   });
 
-  setTickets(updatedTickets);
+  alert("Ticket updated successfully!");
+} catch (error) {
+  console.error("Error updating ticket:", error);
+  alert(error.message);
+}
 
   setEditingTicket(null);
 
