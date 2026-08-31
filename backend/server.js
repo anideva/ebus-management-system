@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import busRoutes from "./routes/busRoutes.js";
 import routeRoutes from "./routes/routeRoutes.js";
 import ticketRoutes from "./routes/ticketRoutes.js";
+import driverRoutes from "./routes/driverRoutes.js"
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use(express.json());
 app.use("/api/buses", busRoutes);
 app.use("/api/routes", routeRoutes);
 app.use("/api/tickets", ticketRoutes);
+app.use("/api/drivers", driverRoutes);
 
 app.get("/", (req, res) => {
   res.json({

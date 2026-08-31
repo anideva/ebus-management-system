@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import "../styles/dashboard.css";
@@ -24,44 +24,30 @@ function DriverManagement() {
 
   const [editingDriver, setEditingDriver] = useState(null);
 
-  const [drivers, setDrivers] = useState([
-    {
-      id: 1,
-      driverId: "D001",
-      driverName: "Rahul Sharma",
-      contactNumber: "9876543210",
-      experience: "5 Years",
-      licenseNumber: "DL-AS-12345",
-      assignedBus: "AS01AB1234",
-      busType: "AC Sleeper",
-      capacity: "45",
-      status: "Active",
-    },
-    {
-      id: 2,
-      driverId: "D002",
-      driverName: "Amit Das",
-      contactNumber: "9123456780",
-      experience: "3 Years",
-      licenseNumber: "DL-AS-54321",
-      assignedBus: "AS02CD5678",
-      busType: "Non AC",
-      capacity: "40",
-      status: "Active",
-    },
-    {
-      id: 3,
-      driverId: "D003",
-      driverName: "Sanjay Bora",
-      contactNumber: "9988776655",
-      experience: "8 Years",
-      licenseNumber: "DL-AS-67890",
-      assignedBus: "AS03EF9012",
-      busType: "Volvo",
-      capacity: "50",
-      status: "On Leave",
-    },
-  ]);
+  const [drivers, setDrivers] = useState([]);
+  useEffect(() => {
+  const fetchDrivers = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/drivers"
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || data.message || "Failed to fetch drivers"
+        );
+      }
+
+      setDrivers(data);
+    } catch (error) {
+      console.error("Error fetching drivers:", error);
+    }
+  };
+
+  fetchDrivers();
+}, []);
 
   // ===========================
   // HANDLE INPUT CHANGE
@@ -78,34 +64,54 @@ function DriverManagement() {
   // ADD DRIVER
   // ===========================
 
-  const handleAddDriver = () => {
+  const handleAddDriver = async () => {
+  if (
+    !newDriver.driverId.trim() ||
+    !newDriver.driverName.trim() ||
+    !newDriver.contactNumber.trim() ||
+    !newDriver.experience.trim() ||
+    !newDriver.licenseNumber.trim() ||
+    !newDriver.assignedBus.trim() ||
+    !newDriver.busType.trim() ||
+    !newDriver.capacity
+  ) {
+    alert("Please fill in all the fields.");
+    return;
+  }
 
-    const driverExists = drivers.some(
-      (driver) => driver.driverId === newDriver.driverId
+  const driverExists = drivers.some(
+    (driver) => driver.driverId === newDriver.driverId
+  );
+
+  if (driverExists) {
+    alert("Driver ID already exists!");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      "http://localhost:5000/api/drivers",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...newDriver,
+          capacity: Number(newDriver.capacity),
+        }),
+      }
     );
-    if (
-  !newDriver.driverId.trim() ||
-  !newDriver.driverName.trim() ||
-  !newDriver.contactNumber.trim() ||
-  !newDriver.experience.trim() ||
-  !newDriver.licenseNumber.trim() ||
-  !newDriver.assignedBus.trim() ||
-  !newDriver.busType.trim() ||
-  !newDriver.capacity.trim()
-) {
-  alert("Please fill in all the fields.");
-  return;
-}
 
-    if (driverExists) {
-      alert("Driver ID already exists!");
-      return;
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || data.message || "Failed to create driver"
+      );
     }
 
-    setDrivers([
-      ...drivers,
-      newDriver,
-    ]);
+    setDrivers([...drivers, data]);
 
     setNewDriver({
       driverId: "",
@@ -119,24 +125,52 @@ function DriverManagement() {
       status: "Active",
     });
 
-    setEditingDriver(null);
-  };
-
+    alert("Driver added successfully!");
+  } catch (error) {
+    console.error("Error creating driver:", error);
+    alert(error.message);
+  }
+};
   // ===========================
   // DELETE DRIVER
   // ===========================
 
-  const handleDeleteDriver = (driverId) => {
+  const handleDeleteDriver = async (driverId) => {
+  const driver = drivers.find(
+    (driver) => driver.driverId === driverId
+  );
 
-    const filteredDrivers = drivers.filter(
-      (driver) => driver.driverId !== driverId
+  if (!driver) {
+    alert("Driver not found.");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/drivers/${driver._id}`,
+      {
+        method: "DELETE",
+      }
     );
 
-    setDrivers(filteredDrivers);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || data.message || "Failed to delete driver"
+      );
+    }
+
+    setDrivers(
+      drivers.filter((item) => item._id !== driver._id)
+    );
 
     alert(`Driver ID ${driverId} deleted successfully.`);
-  };
-
+  } catch (error) {
+    console.error("Error deleting driver:", error);
+    alert(error.message);
+  }
+};
   // ===========================
   // EDIT DRIVER
   // ===========================
@@ -152,22 +186,35 @@ function DriverManagement() {
   // ===========================
   // UPDATE DRIVER
   // ===========================
-
-  const handleUpdateDriver = () => {
-
-    const updatedDrivers = drivers.map((driver) => {
-
-      if (driver.driverId === editingDriver.driverId) {
-
-        return newDriver;
-
+const handleUpdateDriver = async () => {
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/drivers/${editingDriver._id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...newDriver,
+          capacity: Number(newDriver.capacity),
+        }),
       }
+    );
 
-      return driver;
+    const data = await response.json();
 
-    });
+    if (!response.ok) {
+      throw new Error(
+        data.error || data.message || "Failed to update driver"
+      );
+    }
 
-    setDrivers(updatedDrivers);
+    setDrivers(
+      drivers.map((driver) =>
+        driver._id === editingDriver._id ? data : driver
+      )
+    );
 
     setEditingDriver(null);
 
@@ -182,8 +229,13 @@ function DriverManagement() {
       capacity: "",
       status: "Active",
     });
- 
-  };
+
+    alert("Driver updated successfully!");
+  } catch (error) {
+    console.error("Error updating driver:", error);
+    alert(error.message);
+  }
+};
   // ===========================
   // HANDLE CANCEL
   // ===========================
