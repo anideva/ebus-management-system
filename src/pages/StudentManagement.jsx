@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import "../styles/dashboard.css";
@@ -23,42 +23,31 @@ function StudentManagement() {
 
   const [editingStudent, setEditingStudent] = useState(null);
 
-  const [students, setStudents] = useState([
-    {
-      id: 1,
-      studentId: "ST001",
-      studentName: "Rahul Sharma",
-      studentClass: "10",
-      section: "A",
-      contactNumber: "9876543210",
-      assignedRoute: "Guwahati - Tezpur",
-      assignedBus: "AS01AB1234",
-      status: "Active",
-    },
-    {
-      id: 2,
-      studentId: "ST002",
-      studentName: "Priya Das",
-      studentClass: "9",
-      section: "B",
-      contactNumber: "9123456780",
-      assignedRoute: "Guwahati - Nagaon",
-      assignedBus: "AS02CD5678",
-      status: "Active",
-    },
-    {
-      id: 3,
-      studentId: "ST003",
-      studentName: "Arjun Bora",
-      studentClass: "8",
-      section: "C",
-      contactNumber: "9988776655",
-      assignedRoute: "Guwahati - Shillong",
-      assignedBus: "AS03EF9012",
-      status: "Inactive",
-    },
-  ]);
+  const [students, setStudents] = useState([]);
 
+  useEffect(() => {
+  const fetchStudents = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/students"
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || data.message || "Failed to fetch students"
+        );
+      }
+
+      setStudents(data);
+    } catch (error) {
+      console.error("Error fetching students:", error);
+    }
+  };
+
+  fetchStudents();
+}, []);
   // ===========================
   // HANDLE INPUT CHANGE
   // ===========================
@@ -73,35 +62,50 @@ function StudentManagement() {
   // ===========================
   // ADD STUDENT
   // ===========================
+const handleAddStudent = async () => {
+  if (
+    !newStudent.studentId.trim() ||
+    !newStudent.studentName.trim() ||
+    !newStudent.studentClass.trim() ||
+    !newStudent.section.trim() ||
+    !newStudent.contactNumber.trim() ||
+    !newStudent.assignedRoute.trim() ||
+    !newStudent.assignedBus.trim()
+  ) {
+    alert("Please fill in all the fields.");
+    return;
+  }
 
-  const handleAddStudent = () => {
+  const studentExists = students.some(
+    (student) => student.studentId === newStudent.studentId
+  );
 
-    if (
-      !newStudent.studentId.trim() ||
-      !newStudent.studentName.trim() ||
-      !newStudent.studentClass.trim() ||
-      !newStudent.section.trim() ||
-      !newStudent.contactNumber.trim() ||
-      !newStudent.assignedRoute.trim() ||
-      !newStudent.assignedBus.trim()
-    ) {
-      alert("Please fill in all the fields.");
-      return;
-    }
+  if (studentExists) {
+    alert("Student ID already exists!");
+    return;
+  }
 
-    const studentExists = students.some(
-      (student) => student.studentId === newStudent.studentId
+  try {
+    const response = await fetch(
+      "http://localhost:5000/api/students",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newStudent),
+      }
     );
 
-    if (studentExists) {
-      alert("Student ID already exists!");
-      return;
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || data.message || "Failed to create student"
+      );
     }
 
-    setStudents([
-      ...students,
-      newStudent,
-    ]);
+    setStudents([...students, data]);
 
     setNewStudent({
       studentId: "",
@@ -115,22 +119,54 @@ function StudentManagement() {
     });
 
     setEditingStudent(null);
-  };
+
+    alert("Student added successfully!");
+  } catch (error) {
+    console.error("Error creating student:", error);
+    alert(error.message);
+  }
+};
 
   // ===========================
   // DELETE STUDENT
   // ===========================
 
-  const handleDeleteStudent = (studentId) => {
+  const handleDeleteStudent = async (studentId) => {
+  const student = students.find(
+    (student) => student.studentId === studentId
+  );
 
-    const filteredStudents = students.filter(
-      (student) => student.studentId !== studentId
+  if (!student) {
+    alert("Student not found.");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/students/${student._id}`,
+      {
+        method: "DELETE",
+      }
     );
 
-    setStudents(filteredStudents);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || data.message || "Failed to delete student"
+      );
+    }
+
+    setStudents(
+      students.filter((item) => item._id !== student._id)
+    );
 
     alert(`Student ID ${studentId} deleted successfully.`);
-  };
+  } catch (error) {
+    console.error("Error deleting student:", error);
+    alert(error.message);
+  }
+};
 
   // ===========================
   // EDIT STUDENT
@@ -148,33 +184,43 @@ function StudentManagement() {
   // UPDATE STUDENT
   // ===========================
 
-  const handleUpdateStudent = () => {
+ const handleUpdateStudent = async () => {
+  const duplicateStudent = students.some(
+    (student) =>
+      student.studentId === newStudent.studentId &&
+      student._id !== editingStudent._id
+  );
 
-    const duplicateStudent = students.some(
-      (student) =>
-        student.studentId === newStudent.studentId &&
-        student.studentId !== editingStudent.studentId
+  if (duplicateStudent) {
+    alert("Student ID already exists!");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/students/${editingStudent._id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newStudent),
+      }
     );
 
-    if (duplicateStudent) {
-      alert("Student ID already exists!");
-      return;
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || data.message || "Failed to update student"
+      );
     }
 
-    const updatedStudents = students.map((student) => {
-
-      if (student.studentId === editingStudent.studentId) {
-        return {
-          ...student,
-          ...newStudent,
-        };
-      }
-
-      return student;
-
-    });
-
-    setStudents(updatedStudents);
+    setStudents(
+      students.map((student) =>
+        student._id === editingStudent._id ? data : student
+      )
+    );
 
     setEditingStudent(null);
 
@@ -189,7 +235,12 @@ function StudentManagement() {
       status: "Active",
     });
 
-  };
+    alert("Student updated successfully!");
+  } catch (error) {
+    console.error("Error updating student:", error);
+    alert(error.message);
+  }
+};
 
   // ===========================
   // HANDLE CANCEL
