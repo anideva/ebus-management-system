@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import "../styles/dashboard.css";
@@ -24,44 +24,40 @@ function PassManagement() {
 
   const [editingPass, setEditingPass] = useState(null);
 
-  const [passes, setPasses] = useState([
-    {
-      id: 1,
-      passId: "P001",
-      studentName: "Rohan Das",
-      studentId: "ST001",
-      busNumber: "AS01AB1234",
-      routeName: "Guwahati - Tezpur",
-      validFrom: "2026-08-01",
-      validUntil: "2026-08-31",
-      passType: "Monthly",
-      status: "Active",
-    },
-    {
-      id: 2,
-      passId: "P002",
-      studentName: "Priya Sharma",
-      studentId: "ST002",
-      busNumber: "AS02CD5678",
-      routeName: "Guwahati - Nagaon",
-      validFrom: "2026-08-01",
-      validUntil: "2026-10-31",
-      passType: "Quarterly",
-      status: "Active",
-    },
-    {
-      id: 3,
-      passId: "P003",
-      studentName: "Arjun Bora",
-      studentId: "ST003",
-      busNumber: "AS03EF9012",
-      routeName: "Guwahati - Shillong",
-      validFrom: "2026-07-01",
-      validUntil: "2026-07-31",
-      passType: "Monthly",
-      status: "Expired",
-    },
-  ]);
+  const [passes, setPasses] = useState([]);
+  useEffect(() => {
+  const fetchPasses = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/passes"
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || data.message || "Failed to fetch passes"
+        );
+      }
+
+     setPasses(
+  data.map((pass) => ({
+    ...pass,
+    validFrom: pass.validFrom
+      ? pass.validFrom.split("T")[0]
+      : "",
+    validUntil: pass.validUntil
+      ? pass.validUntil.split("T")[0]
+      : "",
+  }))
+);
+    } catch (error) {
+      console.error("Error fetching passes:", error);
+    }
+  };
+
+  fetchPasses();
+}, []);
 
   // ===========================
   // HANDLE INPUT CHANGE
@@ -78,33 +74,50 @@ function PassManagement() {
   // ADD PASS
   // ===========================
 
-  const handleAddPass = () => {
+const handleAddPass = async () => {
+  if (
+    !newPass.passId.trim() ||
+    !newPass.studentName.trim() ||
+    !newPass.studentId.trim() ||
+    !newPass.busNumber.trim() ||
+    !newPass.routeName.trim() ||
+    !newPass.validFrom ||
+    !newPass.validUntil
+  ) {
+    alert("Please fill in all the fields.");
+    return;
+  }
 
-    const passExists = passes.some(
-      (pass) => pass.passId === newPass.passId
+  const passExists = passes.some(
+    (pass) => pass.passId === newPass.passId
+  );
+
+  if (passExists) {
+    alert("Pass ID already exists!");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      "http://localhost:5000/api/passes",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newPass),
+      }
     );
-    if (
-  !newPass.passId.trim() ||
-  !newPass.studentName.trim() ||
-  !newPass.studentId.trim() ||
-  !newPass.busNumber.trim() ||
-  !newPass.routeName.trim() ||
-  !newPass.validFrom ||
-  !newPass.validUntil
-) {
-  alert("Please fill in all the fields.");
-  return;
-}
 
-    if (passExists) {
-      alert("Pass ID already exists!");
-      return;
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || data.message || "Failed to create pass"
+      );
     }
 
-    setPasses([
-      ...passes,
-      newPass,
-    ]);
+    setPasses([...passes, data]);
 
     setNewPass({
       passId: "",
@@ -119,46 +132,76 @@ function PassManagement() {
     });
 
     setEditingPass(null);
-  };
+
+    alert("Pass added successfully!");
+  } catch (error) {
+    console.error("Error creating pass:", error);
+    alert(error.message);
+  }
+};
 
   // ===========================
   // DELETE PASS
   // ===========================
 
-  const handleDeletePass = (passId) => {
+  const handleDeletePass = async (passId) => {
+  const passToDelete = passes.find(
+    (pass) => pass.passId === passId
+  );
+
+  if (!passToDelete) {
+    alert("Pass not found.");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/passes/${passToDelete._id}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || data.message || "Failed to delete pass"
+      );
+    }
 
     const filteredPasses = passes.filter(
-      (pass) => pass.passId !== passId
+      (pass) => pass._id !== passToDelete._id
     );
 
     setPasses(filteredPasses);
 
     alert(`Pass ID ${passId} deleted successfully.`);
-  };
+  } catch (error) {
+    console.error("Error deleting pass:", error);
+    alert(error.message);
+  }
+};
+  
 
-  // ===========================
-  // EDIT PASS
-  // ===========================
+// ===========================
+// EDIT PASS
+// ===========================
 
-  const handleEditPass = (pass) => {
-    console.log("Editing:", pass);
-
-    setNewPass(pass);
-
-    setEditingPass(pass);
-
-  };
+const handleEditPass = (pass) => {
+  setNewPass(pass);
+  setEditingPass(pass);
+};
 
   // ===========================
   // UPDATE PASS
   // ===========================
 
-const handleUpdatePass = () => {
-
+const handleUpdatePass = async () => {
   const duplicatePass = passes.some(
     (pass) =>
       pass.passId === newPass.passId &&
-      pass.passId !== editingPass.passId
+      pass._id !== editingPass._id
   );
 
   if (duplicatePass) {
@@ -166,32 +209,51 @@ const handleUpdatePass = () => {
     return;
   }
 
-  const updatedPasses = passes.map((pass) => {
-    if (pass.passId === editingPass.passId) {
-      return {
-        ...pass,
-        ...newPass,
-      };
+  try {
+    const response = await fetch(
+      `http://localhost:5000/api/passes/${editingPass._id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newPass),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || data.message || "Failed to update pass"
+      );
     }
 
-    return pass;
-  });
+    const updatedPasses = passes.map((pass) =>
+      pass._id === editingPass._id ? data : pass
+    );
 
-  setPasses(updatedPasses);
+    setPasses(updatedPasses);
 
-  setEditingPass(null);
+    setEditingPass(null);
 
-  setNewPass({
-    passId: "",
-    studentName: "",
-    studentId: "",
-    busNumber: "",
-    routeName: "",
-    validFrom: "",
-    validUntil: "",
-    passType: "Monthly",
-    status: "Active",
-  });
+    setNewPass({
+      passId: "",
+      studentName: "",
+      studentId: "",
+      busNumber: "",
+      routeName: "",
+      validFrom: "",
+      validUntil: "",
+      passType: "Monthly",
+      status: "Active",
+    });
+
+    alert("Pass updated successfully!");
+  } catch (error) {
+    console.error("Error updating pass:", error);
+    alert(error.message);
+  }
 };
 
 // ===========================
@@ -213,6 +275,10 @@ const handleCancel = () => {
     status: "Active",
   });
 };
+
+
+
+
 
   return (
     <div className="dashboard">
@@ -333,9 +399,7 @@ const handleCancel = () => {
 
 </div>
         </div>
-        <h3>
-  {editingPass ? "Editing Mode" : "Adding Mode"}
-</h3>
+
 
         <table className="bus-table">
 

@@ -7,6 +7,7 @@ import routeRoutes from "./routes/routeRoutes.js";
 import ticketRoutes from "./routes/ticketRoutes.js";
 import driverRoutes from "./routes/driverRoutes.js";
 import studentRoutes from "./routes/studentRoutes.js";
+import passRoutes from "./routes/passRoutes.js";
 
 dotenv.config();
 
@@ -29,6 +30,7 @@ app.use("/api/routes", routeRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/drivers", driverRoutes);
 app.use("/api/students", studentRoutes);
+app.use("/api/passes", passRoutes);
 
 app.get("/", (req, res) => {
   res.json({
