@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState,useEffect} from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import "../styles/dashboard.css";
@@ -341,19 +341,27 @@ const handleCancel = () => {
               onChange={handleChange}
             />
 
-            <input
-              type="date"
-              name="validFrom"
-              value={newPass.validFrom}
-              onChange={handleChange}
-            />
-                        <input
-              type="date"
-              name="validUntil"
-              value={newPass.validUntil}
-              onChange={handleChange}
-            />
+            <div className="date-field">
+  <label>Valid From</label>
 
+  <input
+    type="date"
+    name="validFrom"
+    value={newPass.validFrom}
+    onChange={handleChange}
+  />
+</div>
+
+<div className="date-field">
+  <label>Valid Until</label>
+
+  <input
+    type="date"
+    name="validUntil"
+    value={newPass.validUntil}
+    onChange={handleChange}
+  />
+</div>
             <select
               name="passType"
               value={newPass.passType}
@@ -436,9 +444,17 @@ const handleCancel = () => {
 
                 <td>{pass.routeName}</td>
 
-                <td>{pass.validFrom}</td>
+                <td>
+  {pass.validFrom
+    ? new Date(pass.validFrom).toLocaleDateString("en-IN")
+    : ""}
+</td>
 
-                <td>{pass.validUntil}</td>
+<td>
+  {pass.validUntil
+    ? new Date(pass.validUntil).toLocaleDateString("en-IN")
+    : ""}
+</td>
 
                 <td>{pass.passType}</td>
 

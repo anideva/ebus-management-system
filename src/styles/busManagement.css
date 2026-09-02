@@ -101,3 +101,13 @@
 .cancel-btn:hover {
     background-color: #bb2d3b;
 }
+
+.date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.date-field label {
+  font-weight: 500;
+}
