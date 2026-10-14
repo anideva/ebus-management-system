@@ -43,30 +43,53 @@ function RecentActivity() {
   }, []);
 
   return (
-    <div className="recent-activity">
-      <h2>📋 Recent Activity</h2>
+    <section className="recent-activity">
+      <div className="recent-activity-header">
+        <h2>Recent Activity</h2>
+        {!loading && activities.length > 0 && (
+          <span className="activity-count">{activities.length} recent</span>
+        )}
+      </div>
 
       <div className="activity-box">
         {loading ? (
-          <p>Loading recent activity...</p>
+          <div className="activity-loading">
+            <span className="activity-spinner" aria-hidden="true" />
+            <span>Loading recent activity...</span>
+          </div>
         ) : activities.length === 0 ? (
-          <p>No recent activity available.</p>
+          <div className="activity-empty">
+            <div className="activity-empty-icon" aria-hidden="true">📋</div>
+            <h3 className="activity-empty-title">No recent activity</h3>
+            <p className="activity-empty-desc">
+              When tickets, passes, or bus details are updated, activities will appear here.
+            </p>
+          </div>
         ) : (
-          activities.map((activity, index) => (
-            <div className="activity-item" key={index}>
-              <div>
-                <strong>{activity.type}</strong>
-                <p>{activity.message}</p>
-              </div>
+          <div className="activity-list">
+            {activities.map((activity, index) => (
+              <div className="activity-item" key={activity._id || index}>
+                <div className="activity-details">
+                  <span className="activity-badge">{activity.type}</span>
+                  <p className="activity-message">{activity.message}</p>
+                </div>
 
-              <small>
-                {new Date(activity.createdAt).toLocaleString()}
-              </small>
-            </div>
-          ))
+                <span className="activity-time">
+                  {activity.createdAt
+                    ? new Date(activity.createdAt).toLocaleString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : ""}
+                </span>
+              </div>
+            ))}
+          </div>
         )}
       </div>
-    </div>
+    </section>
   );
 }
 

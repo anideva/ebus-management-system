@@ -647,7 +647,8 @@ function RouteManagement() {
             ROUTE TABLE
         =========================== */}
 
-        <table className="bus-table">
+        <div className="table-responsive">
+          <table className="bus-table">
 
           <thead>
 
@@ -722,6 +723,7 @@ function RouteManagement() {
                   {/* DELETE ROUTE BUTTON */}
 
                   <button
+                    style={{ color: "var(--danger)", borderColor: "var(--danger)", background: "transparent", marginLeft: "6px" }}
                     onClick={() =>
                       handleDeleteRoute(
                         route._id,
@@ -741,6 +743,7 @@ function RouteManagement() {
           </tbody>
 
         </table>
+        </div>
 
       </div>
 

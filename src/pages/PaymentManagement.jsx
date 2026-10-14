@@ -702,7 +702,8 @@ function PaymentManagement() {
             PAYMENT TABLE
         =========================== */}
 
-        <table className="bus-table">
+        <div className="table-responsive">
+          <table className="bus-table">
 
           <thead>
 
@@ -769,6 +770,7 @@ function PaymentManagement() {
 
                   {/* DELETE PAYMENT BUTTON */}
                   <button
+                    style={{ color: "var(--danger)", borderColor: "var(--danger)", background: "transparent", marginLeft: "6px" }}
                     onClick={() =>
                       handleDeletePayment(payment)
                     }
@@ -785,6 +787,7 @@ function PaymentManagement() {
           </tbody>
 
         </table>
+        </div>
 
       </div>
 

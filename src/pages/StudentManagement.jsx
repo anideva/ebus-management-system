@@ -631,7 +631,8 @@ function StudentManagement() {
             STUDENT TABLE
         =========================== */}
 
-        <table className="bus-table">
+        <div className="table-responsive">
+          <table className="bus-table">
 
           <thead>
 
@@ -707,6 +708,7 @@ function StudentManagement() {
                   {/* DELETE STUDENT BUTTON */}
 
                   <button
+                    style={{ color: "var(--danger)", borderColor: "var(--danger)", background: "transparent", marginLeft: "6px" }}
                     onClick={() =>
                       handleDeleteStudent(
                         student.studentId
@@ -725,6 +727,7 @@ function StudentManagement() {
           </tbody>
 
         </table>
+        </div>
 
       </div>
 

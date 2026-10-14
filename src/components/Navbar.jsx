@@ -47,17 +47,31 @@ function Navbar({ userName }) {
   };
 
   const isDarkMode = theme === "dark";
-  const userGreeting = displayName ? `Welcome, ${displayName}` : "Welcome!";
-  const avatarInitial = displayName ? displayName.trim().charAt(0).toUpperCase() : "👤";
+  const avatarInitial = displayName && displayName.trim()
+    ? displayName.trim().charAt(0).toUpperCase()
+    : "👤";
 
   return (
     <header className="navbar">
-      <div className="logo">
-        🚌 E-Bus Management System
+      <div className="navbar-left">
+        {/* Mobile Hamburger Menu Toggle */}
+        <button
+          type="button"
+          className="mobile-menu-btn"
+          onClick={() => window.dispatchEvent(new Event("toggle-mobile-sidebar"))}
+          aria-label="Toggle navigation menu"
+        >
+          ☰
+        </button>
+
+        <div className="logo">
+          <span className="logo-icon" aria-hidden="true">🚌</span>
+          <span className="logo-text">E-Bus Management System</span>
+        </div>
       </div>
 
       <div className="navbar-actions">
-        {/* Light / Dark Mode Toggle */}
+        {/* Compact Theme Toggle */}
         <button
           type="button"
           className="theme-toggle-btn"
@@ -65,27 +79,28 @@ function Navbar({ userName }) {
           aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
           title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
         >
-          <span className="theme-icon">{isDarkMode ? "☀️" : "🌙"}</span>
-          <span className="theme-label">{isDarkMode ? "Light Mode" : "Dark Mode"}</span>
+          <span className="theme-icon" aria-hidden="true">{isDarkMode ? "☀️" : "🌙"}</span>
+          <span className="theme-label">{isDarkMode ? "Light" : "Dark"}</span>
         </button>
 
-        <div className="user-info">
-          <span className="user-greeting" title={displayName || undefined}>
-            {userGreeting}
-          </span>
-
+        {/* User Profile (Avatar + Name) */}
+        <div className="user-profile">
           <div className="avatar" aria-hidden="true">
             {avatarInitial}
           </div>
-
-          <button
-            type="button"
-            className="logout-btn"
-            onClick={handleLogout}
-          >
-            Logout
-          </button>
+          <span className="user-name" title={displayName || undefined}>
+            {displayName || "User"}
+          </span>
         </div>
+
+        {/* Logout Action */}
+        <button
+          type="button"
+          className="logout-btn"
+          onClick={handleLogout}
+        >
+          Logout
+        </button>
       </div>
     </header>
   );

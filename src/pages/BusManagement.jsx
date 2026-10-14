@@ -360,43 +360,49 @@ const handleCancel = () => {
 
 </div>
 </div>
-        <table className="bus-table">
-  <thead>
-    <tr>
-      <th>Bus Number</th>
-      <th>Bus Name</th>
-      <th>Driver</th>
-      <th>Route</th>
-      <th>Capacity</th>
-      <th>Status</th>
-      <th>Action</th>
-      </tr>
-  </thead>
+        <div className="table-responsive">
+          <table className="bus-table">
+            <thead>
+              <tr>
+                <th>Bus Number</th>
+                <th>Bus Name</th>
+                <th>Driver</th>
+                <th>Route</th>
+                <th>Capacity</th>
+                <th>Status</th>
+                <th>Edit</th>
+                <th>Delete</th>
+              </tr>
+            </thead>
 
-  <tbody>
-    {buses.map((bus) => (
-      <tr key={bus.busNumber}>
-        <td>{bus.busNumber}</td>
-        <td>{bus.busName}</td>
-        <td>{bus.driver}</td>
-        <td>{bus.route}</td>
-        <td>{bus.capacity}</td>
-        <td>{bus.status}</td>
-        <td>
-          <button onClick={()=> handleEditBus(bus)}>
-            Edit
-
-          </button>
-        </td>
-        <td>
-          <button onClick={() => handleDeleteBus(bus._id, bus.busNumber)}>
-  Delete
-</button>
-          </td>
-      </tr>
-    ))}
-  </tbody>
-</table>
+            <tbody>
+              {buses.map((bus) => (
+                <tr key={bus.busNumber}>
+                  <td>{bus.busNumber}</td>
+                  <td>{bus.busName}</td>
+                  <td>{bus.driver}</td>
+                  <td>{bus.route}</td>
+                  <td>{bus.capacity}</td>
+                  <td>{bus.status}</td>
+                  <td>
+                    <button type="button" onClick={() => handleEditBus(bus)}>
+                      Edit
+                    </button>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      style={{ color: "var(--danger)", borderColor: "var(--danger)", background: "transparent" }}
+                      onClick={() => handleDeleteBus(bus._id, bus.busNumber)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

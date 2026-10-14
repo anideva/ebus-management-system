@@ -1,18 +1,20 @@
+/* ========================================================
+   WELCOME SECTION
+   ======================================================== */
 .welcome-section {
-  margin-bottom: 35px;
+  margin-bottom: 20px;
 }
 
-.welcome-section h1 {
-  font-size: 32px;
-  font-weight: 700;
+.welcome-title {
+  font-size: 22px;
+  font-weight: 600;
   color: var(--text-primary);
-  margin-top: 0;
-  margin-bottom: 8px;
-  letter-spacing: -0.5px;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.3px;
 }
 
-.welcome-section p {
+.welcome-subtitle {
   color: var(--text-secondary);
-  font-size: 15px;
+  font-size: 13.5px;
   margin: 0;
 }

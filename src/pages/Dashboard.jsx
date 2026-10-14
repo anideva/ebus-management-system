@@ -203,7 +203,9 @@ function Dashboard() {
     return (
       <div className="dashboard">
         <div className="main-content">
-          <h2 className="loading-text">Loading Dashboard...</h2>
+          <div className="loading-container">
+            <span>Loading dashboard...</span>
+          </div>
         </div>
       </div>
     );
