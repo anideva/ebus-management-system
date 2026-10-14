@@ -42,7 +42,12 @@ The **E-Bus Management System** solves this by centralizing transit logistics in
 
 ## ✨ Key Features & Modules
 
-### 1. 📊 Centralized Dashboard
+### 1. 🔐 Authentication & Access Control
+* Dual sign-in options: Email/Password login and Google Single Sign-On (SSO) via Firebase popup.
+* User session persistence and token refresh handled automatically.
+* Automatic route protection with redirection to `/login` for unauthenticated sessions.
+
+### 2. 📊 Centralized Dashboard
 * Aggregate KPI cards: Total Buses, Active Routes, Registered Students, Active Passes, Total Revenue (calculated from paid transactions), and Total Tickets.
 * Live Recent Activity timeline auditing the latest actions across all system modules.
 
