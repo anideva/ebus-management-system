@@ -1,11 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
-import { signOut } from "firebase/auth";
-import { auth } from "../firebase";
+import { NavLink } from "react-router-dom";
 import "../styles/sidebar.css";
 
 function Sidebar() {
-  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const sidebarRef = useRef(null);
@@ -80,17 +77,6 @@ function Sidebar() {
 
   const closeSidebar = () => {
     setMobileOpen(false);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      closeSidebar();
-      updateDashboardClass(false);
-      navigate("/login");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
   };
 
   return (
@@ -208,20 +194,6 @@ function Sidebar() {
             <span className="nav-tooltip" role="tooltip">Passes</span>
           </NavLink>
         </nav>
-
-        {/* Bottom Logout */}
-        <div className="sidebar-footer">
-          <button
-            type="button"
-            className="sidebar-logout-btn"
-            onClick={handleLogout}
-            aria-label="Logout"
-          >
-            <span className="nav-icon" aria-hidden="true">🚪</span>
-            <span className="nav-label">Logout</span>
-            <span className="nav-tooltip" role="tooltip">Logout</span>
-          </button>
-        </div>
       </aside>
     </>
   );
