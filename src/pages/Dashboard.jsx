@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { auth } from "../firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, updateProfile } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 
 import Sidebar from "../components/Sidebar";
@@ -12,36 +12,28 @@ import RecentActivity from "../components/RecentActivity";
 import { API_BASE_URL } from "../config/api";
 import "../styles/dashboard.css";
 
-
 function Dashboard() {
-
   // ===========================
   // STATES
   // ===========================
-
   const navigate = useNavigate();
 
-  const [userEmail, setUserEmail] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [nameInput, setNameInput] = useState("");
+  const [savingName, setSavingName] = useState(false);
 
   const [totalBuses, setTotalBuses] = useState(0);
-
   const [activeRoutes, setActiveRoutes] = useState(0);
-
   const [registeredStudents, setRegisteredStudents] = useState(0);
-
   const [activePasses, setActivePasses] = useState(0);
-
   const [totalRevenue, setTotalRevenue] = useState(0);
-
   const [totalTickets, setTotalTickets] = useState(0);
 
   const [authLoading, setAuthLoading] = useState(true);
 
-
   // ===========================
   // FETCH DASHBOARD DATA
   // ===========================
-
   const fetchDashboardData = async (token) => {
     try {
       // FETCH BUSES
@@ -144,7 +136,6 @@ function Dashboard() {
   // ===========================
   // FIREBASE AUTHENTICATION
   // ===========================
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -153,8 +144,8 @@ function Dashboard() {
         return;
       }
 
-      // Store logged-in user's email
-      setUserEmail(user.email);
+      // Store logged-in user's displayName (Firebase displayName)
+      setDisplayName(user.displayName || "");
 
       try {
         // GET FIREBASE ID TOKEN
@@ -172,65 +163,103 @@ function Dashboard() {
     return () => unsubscribe();
   }, [navigate]);
 
+  // ===========================
+  // HANDLE SAVE NAME (FOR USERS MISSING DISPLAY NAME)
+  // ===========================
+  const handleSaveName = async (e) => {
+    e.preventDefault();
+    const trimmed = nameInput.trim();
+    if (!trimmed) {
+      alert("Please enter your name.");
+      return;
+    }
+
+    if (!auth.currentUser) return;
+
+    try {
+      setSavingName(true);
+      await updateProfile(auth.currentUser, {
+        displayName: trimmed,
+      });
+
+      // Update local state immediately so UI refreshes without re-login
+      setDisplayName(trimmed);
+      setNameInput("");
+
+      // Notify Navbar and any other listening components
+      window.dispatchEvent(new Event("user-profile-updated"));
+    } catch (error) {
+      console.error("Failed to update profile name:", error);
+      alert("Failed to save name. Please try again.");
+    } finally {
+      setSavingName(false);
+    }
+  };
 
   // ===========================
   // LOADING SCREEN
   // ===========================
-
   if (authLoading) {
-
     return (
       <div className="dashboard">
-
         <div className="main-content">
-
-          <h2>
-            Loading Dashboard...
-          </h2>
-
+          <h2 className="loading-text">Loading Dashboard...</h2>
         </div>
-
       </div>
     );
-
   }
-
 
   // ===========================
   // JSX
   // ===========================
-
   return (
-
     <div className="dashboard">
-
       <Sidebar />
 
-
       <div className="main-content">
+        <Navbar userName={displayName} />
 
-        <Navbar
-          userEmail={userEmail}
-        />
+        <WelcomeSection userName={displayName} />
 
+        {/* ====================================================
+            PERSONALIZED NAME PROMPT (FOR EXISTING ACCOUNTS)
+        ==================================================== */}
+        {!displayName && (
+          <div className="name-prompt-card">
+            <div className="name-prompt-content">
+              <div className="name-prompt-icon" aria-hidden="true">👤</div>
+              <div>
+                <h3>Personalize Your Experience</h3>
+                <p>
+                  You haven't set a display name yet. Enter your name below to personalize your greeting.
+                </p>
+              </div>
+            </div>
 
-        <WelcomeSection
-          userEmail={userEmail}
-        />
-
+            <form onSubmit={handleSaveName} className="name-prompt-form">
+              <input
+                type="text"
+                placeholder="Enter your name (e.g., Aniketh)"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                required
+              />
+              <button type="submit" disabled={savingName || !nameInput.trim()}>
+                {savingName ? "Saving..." : "Save Name"}
+              </button>
+            </form>
+          </div>
+        )}
 
         {/* ===========================
             DASHBOARD STAT CARDS
         =========================== */}
-
         <div className="cards">
-
           <StatCard
             title="Total Buses"
             value={totalBuses}
             icon="🚌"
           />
-
 
           <StatCard
             title="Active Routes"
@@ -238,13 +267,11 @@ function Dashboard() {
             icon="📍"
           />
 
-
           <StatCard
             title="Registered Students"
             value={registeredStudents}
             icon="🎓"
           />
-
 
           <StatCard
             title="Active Passes"
@@ -252,36 +279,26 @@ function Dashboard() {
             icon="🎫"
           />
 
-
           <StatCard
             title="Total Revenue"
             value={`₹${totalRevenue}`}
             icon="💰"
           />
 
-
           <StatCard
             title="Total Tickets"
             value={totalTickets}
             icon="🎟️"
           />
-
         </div>
-
 
         {/* ===========================
             RECENT ACTIVITY
         =========================== */}
-
         <RecentActivity />
-
       </div>
-
     </div>
-
   );
-
 }
-
 
 export default Dashboard;

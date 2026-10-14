@@ -1,49 +1,71 @@
 .sidebar {
   width: 240px;
   height: 100vh;
-  background-color: #1e3a5f;
-  color: white;
-  padding: 20px;
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
+  color: var(--sidebar-text);
+  padding: 24px 18px;
   box-sizing: border-box;
   position: fixed;
   left: 0;
   top: 0;
+  overflow-y: auto;
+  z-index: 100;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
 .sidebar h2 {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 35px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--sidebar-text);
+  letter-spacing: 0.5px;
 }
 
 .sidebar nav {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
 }
 
 .sidebar a {
-  color: white;
+  color: var(--sidebar-text);
   text-decoration: none;
-  padding: 10px;
+  padding: 10px 14px;
   border-radius: 8px;
-  transition: 0.3s;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
 .sidebar a:hover {
-  background-color: #2f537d;
+  background-color: var(--sidebar-hover);
+  color: var(--sidebar-text);
+  transform: translateX(3px);
 }
 
 .sidebar button {
-  margin-top: 30px;
-  padding: 10px;
+  margin-top: 25px;
+  padding: 11px;
   border: none;
   border-radius: 8px;
-  background-color: #e74c3c;
-  color: white;
+  background-color: var(--btn-danger-bg);
+  color: var(--btn-danger-text);
   cursor: pointer;
-  font-size: 15px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
 .sidebar button:hover {
-  background-color: #c0392b;
+  background-color: var(--btn-danger-hover);
+  transform: translateY(-1px);
 }

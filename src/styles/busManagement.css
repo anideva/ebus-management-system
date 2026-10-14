@@ -1,105 +1,142 @@
+/* ========================================================
+   TABLE STYLES
+   ======================================================== */
 .bus-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 30px;
-  background: white;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+  background: var(--bg-surface);
+  border: 1px solid var(--table-border);
+  box-shadow: var(--shadow-md);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
 .bus-table th,
 .bus-table td {
-  border: 1px solid #ddd;
-  padding: 14px;
+  border: 1px solid var(--table-border);
+  padding: 14px 16px;
   text-align: center;
+  color: var(--text-primary);
+  font-size: 14px;
 }
 
 .bus-table th {
-  background-color: #1e3a5f;
-  color: white;
+  background-color: var(--table-header-bg);
+  color: var(--table-header-text);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  border-bottom: 2px solid var(--table-border);
 }
 
 .bus-table tr:nth-child(even) {
-  background-color: #f8f8f8;
+  background-color: var(--table-row-even);
 }
 
 .bus-table tr:hover {
-  background-color: #eef5ff;
+  background-color: var(--table-row-hover);
 }
 
-/* -----------------------------
-   Add Bus Form
------------------------------- */
+.bus-table td button {
+  padding: 7px 14px;
+  width: auto;
+  min-width: 70px;
+  font-size: 13px;
+  border-radius: 5px;
+  display: inline-block;
+}
 
+/* ========================================================
+   MANAGEMENT FORM STYLES
+   ======================================================== */
 .add-bus-form {
-    background: #ffffff;
-    padding: 20px;
-    border-radius: 10px;
-    margin: 25px 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  padding: 24px;
+  border-radius: 12px;
+  margin: 25px 0;
+  box-shadow: var(--shadow-md);
+  transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
 .add-bus-form h2 {
-    margin-bottom: 20px;
-    color: #333;
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 600;
 }
 
 .form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
 }
 
 .form-grid input,
 .form-grid select {
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 15px;
-    outline: none;
+  padding: 11px 13px;
+  border: 1px solid var(--input-border);
+  background-color: var(--input-bg);
+  color: var(--input-text);
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  width: 100%;
+  margin: 0;
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
 }
 
 .form-grid input:focus,
 .form-grid select:focus {
-    border-color: #0d6efd;
+  border-color: var(--input-focus);
+  box-shadow: 0 0 0 3px var(--input-focus-ring);
 }
 
 .add-bus-btn {
-    margin-top: 20px;
-    padding: 10px 20px;
-    font-size:16px;
-    min-width: 140px;
-    background-color: #0d6efd;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.3s;
+  margin-top: 0;
+  padding: 10px 22px;
+  font-size: 15px;
+  font-weight: 500;
+  width: auto;
+  min-width: 140px;
+  background-color: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
 .add-bus-btn:hover {
-    background-color: #0b5ed7;
+  background-color: var(--btn-primary-hover);
+  transform: translateY(-1px);
 }
 
 .button-group {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   margin-top: 20px;
 }
 
 .cancel-btn {
-    padding: 10px 20px;
-    min-width: 140px;
-    font-size: 15px;
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.3s;
+  padding: 10px 22px;
+  min-width: 140px;
+  font-size: 15px;
+  font-weight: 500;
+  width: auto;
+  background-color: var(--btn-danger-bg);
+  color: var(--btn-danger-text);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
 .cancel-btn:hover {
-    background-color: #bb2d3b;
+  background-color: var(--btn-danger-hover);
+  transform: translateY(-1px);
 }
 
 .date-field {
@@ -110,4 +147,12 @@
 
 .date-field label {
   font-weight: 500;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
 }

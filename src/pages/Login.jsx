@@ -2,6 +2,7 @@ import { useState } from "react";
 import { auth, googleProvider } from "../firebase";
 import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { useNavigate, Link } from "react-router-dom";
+import { useTheme } from "../context/ThemeContext";
 
 function Login() {
   // STATES
@@ -10,6 +11,8 @@ function Login() {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
+  const isDarkMode = theme === "dark";
 
   // HANDLE USER EMAIL/PASSWORD LOGIN
   const handleLogin = async (e) => {
@@ -61,7 +64,34 @@ function Login() {
 
   // LOGIN PAGE UI
   return (
-    <div className="container">
+    <div>
+      <div style={{ position: "absolute", top: 20, right: 20 }}>
+        <button
+          type="button"
+          onClick={toggleTheme}
+          aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+          title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+          style={{
+            background: "var(--theme-toggle-bg)",
+            color: "var(--theme-toggle-text)",
+            border: "1px solid var(--theme-toggle-border)",
+            padding: "8px 14px",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontSize: "13px",
+            fontWeight: 500,
+            width: "auto",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+          }}
+        >
+          <span>{isDarkMode ? "☀️" : "🌙"}</span>
+          <span>{isDarkMode ? "Light Mode" : "Dark Mode"}</span>
+        </button>
+      </div>
+
+      <div className="container">
       <h2>Login</h2>
 
       <form onSubmit={handleLogin}>
@@ -126,6 +156,7 @@ function Login() {
       <p>
         Don't have an account? <Link to="/register">Register</Link>
       </p>
+    </div>
     </div>
   );
 }
