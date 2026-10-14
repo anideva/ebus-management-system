@@ -7,14 +7,36 @@ import {
   deleteDriver,
 } from "../controllers/driverController.js";
 
+import verifyToken from "../middleware/authMiddleware.js";
+
 const router = express.Router();
 
-router.get("/", getDrivers);
+// ===========================
+// GET ALL DRIVERS
+// ===========================
 
-router.post("/", createDriver);
+router.get("/", verifyToken, getDrivers);
 
-router.put("/:id", updateDriver);
 
-router.delete("/:id", deleteDriver);
+// ===========================
+// CREATE DRIVER
+// ===========================
+
+router.post("/", verifyToken, createDriver);
+
+
+// ===========================
+// UPDATE DRIVER
+// ===========================
+
+router.put("/:id", verifyToken, updateDriver);
+
+
+// ===========================
+// DELETE DRIVER
+// ===========================
+
+router.delete("/:id", verifyToken, deleteDriver);
+
 
 export default router;

@@ -1,4 +1,5 @@
 import express from "express";
+
 import {
   getBuses,
   createBus,
@@ -6,14 +7,16 @@ import {
   updateBus,
 } from "../controllers/busController.js";
 
+import verifyToken from "../middleware/authMiddleware.js";
+
 const router = express.Router();
 
-router.get("/", getBuses);
+router.get("/", verifyToken, getBuses);
 
-router.post("/", createBus);
+router.post("/", verifyToken, createBus);
 
-router.delete("/:id", deleteBus);
+router.delete("/:id", verifyToken, deleteBus);
 
-router.put("/:id", updateBus);
+router.put("/:id", verifyToken, updateBus);
 
 export default router;

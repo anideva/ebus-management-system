@@ -7,14 +7,36 @@ import {
   deletePass,
 } from "../controllers/passController.js";
 
+import verifyToken from "../middleware/authMiddleware.js";
+
 const router = express.Router();
 
-router.get("/", getPasses);
+// ===========================
+// GET ALL PASSES
+// ===========================
 
-router.post("/", createPass);
+router.get("/", verifyToken, getPasses);
 
-router.put("/:id", updatePass);
 
-router.delete("/:id", deletePass);
+// ===========================
+// CREATE PASS
+// ===========================
+
+router.post("/", verifyToken, createPass);
+
+
+// ===========================
+// UPDATE PASS
+// ===========================
+
+router.put("/:id", verifyToken, updatePass);
+
+
+// ===========================
+// DELETE PASS
+// ===========================
+
+router.delete("/:id", verifyToken, deletePass);
+
 
 export default router;

@@ -1,8 +1,11 @@
-import { useState,useEffect} from "react";
+import { useState, useEffect } from "react";
+import { auth } from "../firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import "../styles/dashboard.css";
 import "../styles/busManagement.css";
+import { API_BASE_URL } from "../config/api";
 
 function PassManagement() {
 
@@ -23,41 +26,66 @@ function PassManagement() {
   });
 
   const [editingPass, setEditingPass] = useState(null);
-
   const [passes, setPasses] = useState([]);
+  const [userEmail, setUserEmail] = useState("Admin");
+
+  // ===========================
+  // FETCH PASS DATA
+  // ===========================
+
   useEffect(() => {
-  const fetchPasses = async () => {
-    try {
-      const response = await fetch(
-        "http://localhost:5000/api/passes"
-      );
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.error || data.message || "Failed to fetch passes"
-        );
+      if (!user) {
+        console.error("No authenticated user found");
+        return;
       }
 
-     setPasses(
-  data.map((pass) => ({
-    ...pass,
-    validFrom: pass.validFrom
-      ? pass.validFrom.split("T")[0]
-      : "",
-    validUntil: pass.validUntil
-      ? pass.validUntil.split("T")[0]
-      : "",
-  }))
-);
-    } catch (error) {
-      console.error("Error fetching passes:", error);
-    }
-  };
+      if (user.email) {
+        setUserEmail(user.email);
+      }
 
-  fetchPasses();
-}, []);
+      try {
+        const token = await user.getIdToken();
+
+        const response = await fetch(
+          `${API_BASE_URL}/api/passes`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.error ||
+            data.message ||
+            "Failed to fetch passes"
+          );
+        }
+
+        setPasses(
+          data.map((pass) => ({
+            ...pass,
+            validFrom: pass.validFrom
+              ? pass.validFrom.split("T")[0]
+              : "",
+            validUntil: pass.validUntil
+              ? pass.validUntil.split("T")[0]
+              : "",
+          }))
+        );
+
+      } catch (error) {
+        console.error("Error fetching passes:", error);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // ===========================
   // HANDLE INPUT CHANGE
@@ -71,169 +99,241 @@ function PassManagement() {
   };
 
   // ===========================
-  // ADD PASS
+  // ADD NEW PASS
   // ===========================
 
-const handleAddPass = async () => {
-  if (
-    !newPass.passId.trim() ||
-    !newPass.studentName.trim() ||
-    !newPass.studentId.trim() ||
-    !newPass.busNumber.trim() ||
-    !newPass.routeName.trim() ||
-    !newPass.validFrom ||
-    !newPass.validUntil
-  ) {
-    alert("Please fill in all the fields.");
-    return;
-  }
+  const handleAddPass = async () => {
 
-  const passExists = passes.some(
-    (pass) => pass.passId === newPass.passId
-  );
-
-  if (passExists) {
-    alert("Pass ID already exists!");
-    return;
-  }
-
-  try {
-    const response = await fetch(
-      "http://localhost:5000/api/passes",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newPass),
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        data.error || data.message || "Failed to create pass"
-      );
+    if (
+      !newPass.passId.trim() ||
+      !newPass.studentName.trim() ||
+      !newPass.studentId.trim() ||
+      !newPass.busNumber.trim() ||
+      !newPass.routeName.trim() ||
+      !newPass.validFrom ||
+      !newPass.validUntil
+    ) {
+      alert("Please fill in all the fields.");
+      return;
     }
 
-    setPasses([...passes, data]);
+    const passExists = passes.some(
+      (pass) => pass.passId === newPass.passId
+    );
 
-    setNewPass({
-      passId: "",
-      studentName: "",
-      studentId: "",
-      busNumber: "",
-      routeName: "",
-      validFrom: "",
-      validUntil: "",
-      passType: "Monthly",
-      status: "Active",
-    });
+    if (passExists) {
+      alert("Pass ID already exists!");
+      return;
+    }
 
-    setEditingPass(null);
+    try {
 
-    alert("Pass added successfully!");
-  } catch (error) {
-    console.error("Error creating pass:", error);
-    alert(error.message);
-  }
-};
+      const user = auth.currentUser;
+
+      if (!user) {
+        throw new Error("User is not logged in");
+      }
+
+      const token = await user.getIdToken();
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/passes`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(newPass),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+          data.message ||
+          "Failed to create pass"
+        );
+      }
+
+      setPasses([...passes, data]);
+
+      setNewPass({
+        passId: "",
+        studentName: "",
+        studentId: "",
+        busNumber: "",
+        routeName: "",
+        validFrom: "",
+        validUntil: "",
+        passType: "Monthly",
+        status: "Active",
+      });
+
+      setEditingPass(null);
+
+      alert("Pass added successfully!");
+
+    } catch (error) {
+      console.error("Error creating pass:", error);
+      alert(error.message);
+    }
+  };
 
   // ===========================
   // DELETE PASS
   // ===========================
 
   const handleDeletePass = async (passId) => {
-  const passToDelete = passes.find(
-    (pass) => pass.passId === passId
-  );
 
-  if (!passToDelete) {
-    alert("Pass not found.");
-    return;
-  }
-
-  try {
-    const response = await fetch(
-      `http://localhost:5000/api/passes/${passToDelete._id}`,
-      {
-        method: "DELETE",
-      }
+    const passToDelete = passes.find(
+      (pass) => pass.passId === passId
     );
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        data.error || data.message || "Failed to delete pass"
-      );
+    if (!passToDelete) {
+      alert("Pass not found.");
+      return;
     }
 
-    const filteredPasses = passes.filter(
-      (pass) => pass._id !== passToDelete._id
-    );
+    try {
 
-    setPasses(filteredPasses);
+      const user = auth.currentUser;
 
-    alert(`Pass ID ${passId} deleted successfully.`);
-  } catch (error) {
-    console.error("Error deleting pass:", error);
-    alert(error.message);
-  }
-};
-  
+      if (!user) {
+        throw new Error("User is not logged in");
+      }
 
-// ===========================
-// EDIT PASS
-// ===========================
+      const token = await user.getIdToken();
 
-const handleEditPass = (pass) => {
-  setNewPass(pass);
-  setEditingPass(pass);
-};
+      const response = await fetch(
+        `${API_BASE_URL}/api/passes/${passToDelete._id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+          data.message ||
+          "Failed to delete pass"
+        );
+      }
+
+      const filteredPasses = passes.filter(
+        (pass) => pass._id !== passToDelete._id
+      );
+
+      setPasses(filteredPasses);
+
+      alert(`Pass ID ${passId} deleted successfully.`);
+
+    } catch (error) {
+      console.error("Error deleting pass:", error);
+      alert(error.message);
+    }
+  };
+
+  // ===========================
+  // EDIT PASS
+  // ===========================
+
+  const handleEditPass = (pass) => {
+    setNewPass(pass);
+    setEditingPass(pass);
+  };
 
   // ===========================
   // UPDATE PASS
   // ===========================
 
-const handleUpdatePass = async () => {
-  const duplicatePass = passes.some(
-    (pass) =>
-      pass.passId === newPass.passId &&
-      pass._id !== editingPass._id
-  );
+  const handleUpdatePass = async () => {
 
-  if (duplicatePass) {
-    alert("Pass ID already exists!");
-    return;
-  }
-
-  try {
-    const response = await fetch(
-      `http://localhost:5000/api/passes/${editingPass._id}`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newPass),
-      }
+    const duplicatePass = passes.some(
+      (pass) =>
+        pass.passId === newPass.passId &&
+        pass._id !== editingPass._id
     );
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        data.error || data.message || "Failed to update pass"
-      );
+    if (duplicatePass) {
+      alert("Pass ID already exists!");
+      return;
     }
 
-    const updatedPasses = passes.map((pass) =>
-      pass._id === editingPass._id ? data : pass
-    );
+    try {
 
-    setPasses(updatedPasses);
+      const user = auth.currentUser;
+
+      if (!user) {
+        throw new Error("User is not logged in");
+      }
+
+      const token = await user.getIdToken();
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/passes/${editingPass._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(newPass),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+          data.message ||
+          "Failed to update pass"
+        );
+      }
+
+      const updatedPasses = passes.map((pass) =>
+        pass._id === editingPass._id
+          ? data
+          : pass
+      );
+
+      setPasses(updatedPasses);
+
+      setEditingPass(null);
+
+      setNewPass({
+        passId: "",
+        studentName: "",
+        studentId: "",
+        busNumber: "",
+        routeName: "",
+        validFrom: "",
+        validUntil: "",
+        passType: "Monthly",
+        status: "Active",
+      });
+
+      alert("Pass updated successfully!");
+
+    } catch (error) {
+      console.error("Error updating pass:", error);
+      alert(error.message);
+    }
+  };
+
+  // ===========================
+  // HANDLE CANCEL
+  // ===========================
+
+  const handleCancel = () => {
 
     setEditingPass(null);
 
@@ -248,37 +348,11 @@ const handleUpdatePass = async () => {
       passType: "Monthly",
       status: "Active",
     });
+  };
 
-    alert("Pass updated successfully!");
-  } catch (error) {
-    console.error("Error updating pass:", error);
-    alert(error.message);
-  }
-};
-
-// ===========================
-// HANDLE CANCEL
-// ===========================
-
-const handleCancel = () => {
-  setEditingPass(null);
-
-  setNewPass({
-    passId: "",
-    studentName: "",
-    studentId: "",
-    busNumber: "",
-    routeName: "",
-    validFrom: "",
-    validUntil: "",
-    passType: "Monthly",
-    status: "Active",
-  });
-};
-
-
-
-
+  // ===========================
+  // PASS MANAGEMENT UI
+  // ===========================
 
   return (
     <div className="dashboard">
@@ -287,7 +361,7 @@ const handleCancel = () => {
 
       <div className="main-content">
 
-        <Navbar userEmail="Admin" />
+        <Navbar userEmail={userEmail} />
 
         <h1>🎫 Pass Management</h1>
 
@@ -342,26 +416,27 @@ const handleCancel = () => {
             />
 
             <div className="date-field">
-  <label>Valid From</label>
+              <label>Valid From</label>
 
-  <input
-    type="date"
-    name="validFrom"
-    value={newPass.validFrom}
-    onChange={handleChange}
-  />
-</div>
+              <input
+                type="date"
+                name="validFrom"
+                value={newPass.validFrom}
+                onChange={handleChange}
+              />
+            </div>
 
-<div className="date-field">
-  <label>Valid Until</label>
+            <div className="date-field">
+              <label>Valid Until</label>
 
-  <input
-    type="date"
-    name="validUntil"
-    value={newPass.validUntil}
-    onChange={handleChange}
-  />
-</div>
+              <input
+                type="date"
+                name="validUntil"
+                value={newPass.validUntil}
+                onChange={handleChange}
+              />
+            </div>
+
             <select
               name="passType"
               value={newPass.passType}
@@ -383,31 +458,37 @@ const handleCancel = () => {
 
           </div>
 
-         <div className="button-group">
+          <div className="button-group">
 
-  <button
-    className="add-bus-btn"
-    onClick={
-      editingPass
-        ? handleUpdatePass
-        : handleAddPass
-    }
-  >
-    {editingPass ? "Update Pass" : "Add Pass"}
-  </button>
+            <button
+              className="add-bus-btn"
+              onClick={
+                editingPass
+                  ? handleUpdatePass
+                  : handleAddPass
+              }
+            >
+              {editingPass
+                ? "Update Pass"
+                : "Add Pass"}
+            </button>
 
-  {editingPass && (
-    <button
-      className="add-bus-btn cancel-btn"
-      onClick={handleCancel}
-    >
-      Cancel
-    </button>
-  )}
+            {editingPass && (
+              <button
+                className="add-bus-btn cancel-btn"
+                onClick={handleCancel}
+              >
+                Cancel
+              </button>
+            )}
 
-</div>
+          </div>
+
         </div>
 
+        {/* ===========================
+            PASS TABLE
+        =========================== */}
 
         <table className="bus-table">
 
@@ -445,16 +526,20 @@ const handleCancel = () => {
                 <td>{pass.routeName}</td>
 
                 <td>
-  {pass.validFrom
-    ? new Date(pass.validFrom).toLocaleDateString("en-IN")
-    : ""}
-</td>
+                  {pass.validFrom
+                    ? new Date(
+                        pass.validFrom
+                      ).toLocaleDateString("en-IN")
+                    : ""}
+                </td>
 
-<td>
-  {pass.validUntil
-    ? new Date(pass.validUntil).toLocaleDateString("en-IN")
-    : ""}
-</td>
+                <td>
+                  {pass.validUntil
+                    ? new Date(
+                        pass.validUntil
+                      ).toLocaleDateString("en-IN")
+                    : ""}
+                </td>
 
                 <td>{pass.passType}</td>
 
@@ -462,12 +547,16 @@ const handleCancel = () => {
 
                 <td>
 
+                  {/* EDIT PASS BUTTON */}
                   <button
-                    onClick={() => handleEditPass(pass)}
+                    onClick={() =>
+                      handleEditPass(pass)
+                    }
                   >
                     Edit
                   </button>
 
+                  {/* DELETE PASS BUTTON */}
                   <button
                     onClick={() =>
                       handleDeletePass(pass.passId)

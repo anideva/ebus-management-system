@@ -7,14 +7,16 @@ import {
   deleteTicket,
 } from "../controllers/ticketController.js";
 
+import verifyToken from "../middleware/authMiddleware.js";
+
 const router = express.Router();
 
-router.get("/", getTickets);
+router.get("/", verifyToken, getTickets);
 
-router.post("/", createTicket);
+router.post("/", verifyToken, createTicket);
 
-router.put("/:id", updateTicket);
+router.put("/:id", verifyToken, updateTicket);
 
-router.delete("/:id", deleteTicket);
+router.delete("/:id", verifyToken, deleteTicket);
 
 export default router;

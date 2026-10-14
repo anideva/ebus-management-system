@@ -7,14 +7,36 @@ import {
   deletePayment,
 } from "../controllers/paymentController.js";
 
+import verifyToken from "../middleware/authMiddleware.js";
+
 const router = express.Router();
 
-router.get("/", getPayments);
+// ===========================
+// GET ALL PAYMENTS
+// ===========================
 
-router.post("/", createPayment);
+router.get("/", verifyToken, getPayments);
 
-router.put("/:id", updatePayment);
 
-router.delete("/:id", deletePayment);
+// ===========================
+// CREATE PAYMENT
+// ===========================
+
+router.post("/", verifyToken, createPayment);
+
+
+// ===========================
+// UPDATE PAYMENT
+// ===========================
+
+router.put("/:id", verifyToken, updatePayment);
+
+
+// ===========================
+// DELETE PAYMENT
+// ===========================
+
+router.delete("/:id", verifyToken, deletePayment);
+
 
 export default router;

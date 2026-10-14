@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
+import { auth } from "../firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import "../styles/dashboard.css";
 import "../styles/busManagement.css";
+import { API_BASE_URL } from "../config/api";
 
 
 function BusManagement() {
@@ -22,13 +25,31 @@ const [newBus, setNewBus] = useState({
 });
 
 const [editingBus, setEditingBus] = useState(null);
-
 const [buses, setBuses] = useState([]);
+const [userEmail, setUserEmail] = useState("Admin");
 
- useEffect(() => {
-  const fetchBuses = async () => {
+useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      console.error("No authenticated user found");
+      return;
+    }
+
+    if (user.email) {
+      setUserEmail(user.email);
+    }
+
     try {
-      const response = await fetch("http://localhost:5000/api/buses");
+      const token = await user.getIdToken();
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/buses`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to fetch buses");
@@ -40,9 +61,9 @@ const [buses, setBuses] = useState([]);
     } catch (error) {
       console.error("Error fetching buses:", error);
     }
-  };
+  });
 
-  fetchBuses();
+  return () => unsubscribe();
 }, []);
 //FUNCTIONS
 //HANDLING THE CHANGE 
@@ -69,14 +90,22 @@ const handleAddBus = async () => {
   }
 
   try {
-    const response = await fetch("http://localhost:5000/api/buses", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(newBus),
-    });
+    const user = auth.currentUser;
 
+if (!user) {
+  throw new Error("User is not logged in");
+}
+
+const token = await user.getIdToken();
+
+const response = await fetch(`${API_BASE_URL}/api/buses`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  },
+  body: JSON.stringify(newBus),
+});
     const data = await response.json();
 
     if (!response.ok) {
@@ -106,17 +135,29 @@ const handleAddBus = async () => {
 //Create a new array excluding the selected bus
 const handleDeleteBus = async (id, busNumber) => {
   const confirmed = window.confirm(
-  `Are you sure you want to delete bus ${busNumber}?`
-);
+    `Are you sure you want to delete bus ${busNumber}?`
+  );
 
-if (!confirmed) {
-  return;
-}
+  if (!confirmed) {
+    return;
+  }
+
   try {
+    const user = auth.currentUser;
+
+    if (!user) {
+      throw new Error("User is not logged in");
+    }
+
+    const token = await user.getIdToken();
+
     const response = await fetch(
-      `http://localhost:5000/api/buses/${id}`,
+      `${API_BASE_URL}/api/buses/${id}`,
       {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
     );
 
@@ -146,12 +187,21 @@ const handleEditBus = (bus) => {
 //Update the selected bus and refresh the bus list
 const handleUpdateBus = async () => {
   try {
+    const user = auth.currentUser;
+
+    if (!user) {
+      throw new Error("User is not logged in");
+    }
+
+    const token = await user.getIdToken();
+
     const response = await fetch(
-      `http://localhost:5000/api/buses/${editingBus._id}`,
+      `${API_BASE_URL}/api/buses/${editingBus._id}`,
       {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(newBus),
       }
@@ -209,7 +259,7 @@ const handleCancel = () => {
       <Sidebar />
 
       <div className="main-content">
-        <Navbar userEmail="Admin" />
+        <Navbar userEmail={userEmail} />
 
         <h1>🚌 Bus Management</h1>
 

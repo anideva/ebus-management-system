@@ -1,14 +1,19 @@
 import { useState, useEffect } from "react";
+import { auth } from "../firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import "../styles/dashboard.css";
 import "../styles/busManagement.css";
+import { API_BASE_URL } from "../config/api";
 
 function PaymentManagement() {
 
   // ===========================
   // STATES
   // ===========================
+
+  const [userEmail, setUserEmail] = useState("Admin");
 
   const [newPayment, setNewPayment] = useState({
     paymentId: "",
@@ -20,73 +25,55 @@ function PaymentManagement() {
     status: "Paid",
   });
 
-  const [tickets] = useState([
-    {
-      ticketId: "T001",
-      passengerName: "Rahul Sharma",
-      amount: "350",
-    },
-    {
-      ticketId: "T002",
-      passengerName: "Priya Das",
-      amount: "250",
-    },
-    {
-      ticketId: "T003",
-      passengerName: "Arjun Bora",
-      amount: "450",
-    },
-    {
-      ticketId: "T004",
-      passengerName: "Neha Sharma",
-      amount: "300",
-    },
-  ]);
-
+  const [tickets, setTickets] = useState([]);
   const [editingPayment, setEditingPayment] = useState(null);
-
   const [payments, setPayments] = useState([]);
 
-
   // ===========================
-  // FETCH PAYMENTS
+  // FETCH PAYMENTS & TICKETS
   // ===========================
 
   useEffect(() => {
-
-    const fetchPayments = async () => {
-
-      try {
-
-        const response = await fetch(
-          "http://localhost:5000/api/payments"
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data.error ||
-            data.message ||
-            "Failed to fetch payments"
-          );
-        }
-
-        setPayments(data);
-
-      } catch (error) {
-
-        console.error(
-          "Error fetching payments:",
-          error
-        );
-
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        return;
       }
 
-    };
+      if (user.email) {
+        setUserEmail(user.email);
+      }
 
-    fetchPayments();
+      try {
+        const token = await user.getIdToken();
 
+        const [paymentsRes, ticketsRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/payments`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+          fetch(`${API_BASE_URL}/api/tickets`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+        ]);
+
+        if (paymentsRes.ok) {
+          const paymentsData = await paymentsRes.json();
+          setPayments(paymentsData);
+        }
+
+        if (ticketsRes.ok) {
+          const ticketsData = await ticketsRes.json();
+          setTickets(ticketsData);
+        }
+      } catch (error) {
+        console.error("Error fetching payments or tickets:", error);
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
 
@@ -115,7 +102,9 @@ function PaymentManagement() {
           ? selectedTicket.passengerName
           : "",
         amount: selectedTicket
-          ? selectedTicket.amount
+          ? (selectedTicket.fare !== undefined
+              ? selectedTicket.fare
+              : selectedTicket.amount || "")
           : "",
       });
 
@@ -189,13 +178,23 @@ function PaymentManagement() {
 
     try {
 
+      const user = auth.currentUser;
+
+      if (!user) {
+        throw new Error("User is not logged in");
+      }
+
+      // Get Firebase ID token
+      const token = await user.getIdToken();
+
       const response = await fetch(
-        "http://localhost:5000/api/payments",
+        `${API_BASE_URL}/api/payments`,
         {
           method: "POST",
 
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
 
           body: JSON.stringify({
@@ -327,13 +326,23 @@ function PaymentManagement() {
 
     try {
 
+      const user = auth.currentUser;
+
+      if (!user) {
+        throw new Error("User is not logged in");
+      }
+
+      // Get Firebase ID token
+      const token = await user.getIdToken();
+
       const response = await fetch(
-        `http://localhost:5000/api/payments/${editingPayment._id}`,
+        `${API_BASE_URL}/api/payments/${editingPayment._id}`,
         {
           method: "PUT",
 
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
 
           body: JSON.stringify({
@@ -423,10 +432,23 @@ function PaymentManagement() {
 
     try {
 
+      const user = auth.currentUser;
+
+      if (!user) {
+        throw new Error("User is not logged in");
+      }
+
+      // Get Firebase ID token
+      const token = await user.getIdToken();
+
       const response = await fetch(
-        `http://localhost:5000/api/payments/${payment._id}`,
+        `${API_BASE_URL}/api/payments/${payment._id}`,
         {
           method: "DELETE",
+
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
 
@@ -445,7 +467,7 @@ function PaymentManagement() {
       }
 
 
-      // Remove from frontend
+      // Remove payment from frontend
 
       const filteredPayments =
         payments.filter(
@@ -508,7 +530,7 @@ function PaymentManagement() {
 
       <div className="main-content">
 
-        <Navbar userEmail="Admin" />
+        <Navbar userEmail={userEmail} />
 
         <h1>💳 Payment Management</h1>
 
@@ -589,7 +611,6 @@ function PaymentManagement() {
               placeholder="Amount"
               value={newPayment.amount}
               onChange={handleChange}
-              
             />
 
 
@@ -602,13 +623,9 @@ function PaymentManagement() {
             >
 
               <option>UPI</option>
-
               <option>Debit Card</option>
-
               <option>Credit Card</option>
-
               <option>Net Banking</option>
-
               <option>Cash</option>
 
             </select>
@@ -634,11 +651,8 @@ function PaymentManagement() {
             >
 
               <option>Paid</option>
-
               <option>Pending</option>
-
               <option>Failed</option>
-
               <option>Refunded</option>
 
             </select>
@@ -695,19 +709,12 @@ function PaymentManagement() {
             <tr>
 
               <th>Payment ID</th>
-
               <th>Ticket ID</th>
-
               <th>Passenger</th>
-
               <th>Amount (₹)</th>
-
               <th>Method</th>
-
               <th>Transaction ID</th>
-
               <th>Status</th>
-
               <th>Action</th>
 
             </tr>
@@ -719,9 +726,7 @@ function PaymentManagement() {
 
             {payments.map((payment) => (
 
-              <tr
-                key={payment._id}
-              >
+              <tr key={payment._id}>
 
                 <td>
                   {payment.paymentId}
@@ -753,6 +758,7 @@ function PaymentManagement() {
 
                 <td>
 
+                  {/* EDIT PAYMENT BUTTON */}
                   <button
                     onClick={() =>
                       handleEditPayment(payment)
@@ -761,7 +767,7 @@ function PaymentManagement() {
                     Edit
                   </button>
 
-
+                  {/* DELETE PAYMENT BUTTON */}
                   <button
                     onClick={() =>
                       handleDeletePayment(payment)

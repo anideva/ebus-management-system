@@ -1,11 +1,18 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import "../styles/sidebar.css";
 
 function Sidebar() {
+  const navigate = useNavigate();
+
   const handleLogout = async () => {
-    await signOut(auth);
+    try {
+      await signOut(auth);
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
 
   return (
@@ -22,18 +29,12 @@ function Sidebar() {
         <Link to="/student-management">🎓 Student Management</Link>
 
         <Link to="/ticket-management">🎟️ Ticket Management</Link>
-        
+
         <Link to="/payment-management">💳 Payment Management</Link>
 
         <Link to="/drivers">👨‍✈️ Driver Management</Link>
 
         <Link to="/passes">🎫 Pass Management</Link>
-
-        <Link to="/search">📍 Search Bus</Link>
-
-        <Link to="/profile">👤 Profile</Link>
-
-       
 
         <button onClick={handleLogout}>🚪 Logout</button>
       </nav>

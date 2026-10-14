@@ -7,14 +7,16 @@ import {
   deleteStudent,
 } from "../controllers/studentController.js";
 
+import verifyToken from "../middleware/authMiddleware.js";
+
 const router = express.Router();
 
-router.get("/", getStudents);
+router.get("/", verifyToken, getStudents);
 
-router.post("/", createStudent);
+router.post("/", verifyToken, createStudent);
 
-router.put("/:id", updateStudent);
+router.put("/:id", verifyToken, updateStudent);
 
-router.delete("/:id", deleteStudent);
+router.delete("/:id", verifyToken, deleteStudent);
 
 export default router;

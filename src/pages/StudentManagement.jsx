@@ -1,14 +1,19 @@
 import { useState, useEffect } from "react";
+import { auth } from "../firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import "../styles/dashboard.css";
 import "../styles/busManagement.css";
+import { API_BASE_URL } from "../config/api";
 
 function StudentManagement() {
 
   // ===========================
   // STATES
   // ===========================
+
+  const [userEmail, setUserEmail] = useState("Admin");
 
   const [newStudent, setNewStudent] = useState({
     studentId: "",
@@ -25,148 +30,293 @@ function StudentManagement() {
 
   const [students, setStudents] = useState([]);
 
+
+  // ===========================
+  // FETCH STUDENTS
+  // ===========================
+
   useEffect(() => {
-  const fetchStudents = async () => {
-    try {
-      const response = await fetch(
-        "http://localhost:5000/api/students"
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.error || data.message || "Failed to fetch students"
-        );
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        return;
       }
 
-      setStudents(data);
-    } catch (error) {
-      console.error("Error fetching students:", error);
-    }
-  };
+      if (user.email) {
+        setUserEmail(user.email);
+      }
 
-  fetchStudents();
-}, []);
+      try {
+        const token = await user.getIdToken();
+
+        const response = await fetch(
+          `${API_BASE_URL}/api/students`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.error ||
+            data.message ||
+            "Failed to fetch students"
+          );
+        }
+
+        setStudents(data);
+      } catch (error) {
+        console.error("Error fetching students:", error);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+
   // ===========================
   // HANDLE INPUT CHANGE
   // ===========================
 
   const handleChange = (e) => {
+
     setNewStudent({
       ...newStudent,
       [e.target.name]: e.target.value,
     });
+
   };
+
 
   // ===========================
   // ADD STUDENT
   // ===========================
-const handleAddStudent = async () => {
-  if (
-    !newStudent.studentId.trim() ||
-    !newStudent.studentName.trim() ||
-    !newStudent.studentClass.trim() ||
-    !newStudent.section.trim() ||
-    !newStudent.contactNumber.trim() ||
-    !newStudent.assignedRoute.trim() ||
-    !newStudent.assignedBus.trim()
-  ) {
-    alert("Please fill in all the fields.");
-    return;
-  }
 
-  const studentExists = students.some(
-    (student) => student.studentId === newStudent.studentId
-  );
+  const handleAddStudent = async () => {
 
-  if (studentExists) {
-    alert("Student ID already exists!");
-    return;
-  }
+    // Validate required fields
 
-  try {
-    const response = await fetch(
-      "http://localhost:5000/api/students",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newStudent),
-      }
-    );
+    if (
+      !newStudent.studentId.trim() ||
+      !newStudent.studentName.trim() ||
+      !newStudent.studentClass.trim() ||
+      !newStudent.section.trim() ||
+      !newStudent.contactNumber.trim() ||
+      !newStudent.assignedRoute.trim() ||
+      !newStudent.assignedBus.trim()
+    ) {
 
-    const data = await response.json();
+      alert("Please fill in all the fields.");
 
-    if (!response.ok) {
-      throw new Error(
-        data.error || data.message || "Failed to create student"
-      );
+      return;
+
     }
 
-    setStudents([...students, data]);
 
-    setNewStudent({
-      studentId: "",
-      studentName: "",
-      studentClass: "",
-      section: "",
-      contactNumber: "",
-      assignedRoute: "",
-      assignedBus: "",
-      status: "Active",
-    });
+    // Prevent duplicate Student ID
 
-    setEditingStudent(null);
+    const studentExists = students.some(
+      (student) =>
+        student.studentId === newStudent.studentId
+    );
 
-    alert("Student added successfully!");
-  } catch (error) {
-    console.error("Error creating student:", error);
-    alert(error.message);
-  }
-};
+    if (studentExists) {
+
+      alert("Student ID already exists!");
+
+      return;
+
+    }
+
+
+    try {
+
+      // Check Firebase login
+
+      const user = auth.currentUser;
+
+      if (!user) {
+        throw new Error("User is not logged in");
+      }
+
+      // Get Firebase ID token
+
+      const token = await user.getIdToken();
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/students`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+
+          body: JSON.stringify(newStudent),
+        }
+      );
+
+
+      const data = await response.json();
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          data.error ||
+          data.message ||
+          "Failed to create student"
+        );
+
+      }
+
+
+      // Add newly created student
+      // to frontend list
+
+      setStudents([
+        ...students,
+        data,
+      ]);
+
+
+      // Reset form
+
+      setNewStudent({
+        studentId: "",
+        studentName: "",
+        studentClass: "",
+        section: "",
+        contactNumber: "",
+        assignedRoute: "",
+        assignedBus: "",
+        status: "Active",
+      });
+
+      setEditingStudent(null);
+
+
+      alert("Student added successfully!");
+
+    } catch (error) {
+
+      console.error(
+        "Error creating student:",
+        error
+      );
+
+      alert(error.message);
+
+    }
+
+  };
+
 
   // ===========================
   // DELETE STUDENT
   // ===========================
 
   const handleDeleteStudent = async (studentId) => {
-  const student = students.find(
-    (student) => student.studentId === studentId
-  );
 
-  if (!student) {
-    alert("Student not found.");
-    return;
-  }
-
-  try {
-    const response = await fetch(
-      `http://localhost:5000/api/students/${student._id}`,
-      {
-        method: "DELETE",
-      }
+    const student = students.find(
+      (student) =>
+        student.studentId === studentId
     );
 
-    const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(
-        data.error || data.message || "Failed to delete student"
-      );
+    if (!student) {
+
+      alert("Student not found.");
+
+      return;
+
     }
 
-    setStudents(
-      students.filter((item) => item._id !== student._id)
+
+    // Ask for confirmation before deleting
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete Student ID ${studentId}?`
     );
 
-    alert(`Student ID ${studentId} deleted successfully.`);
-  } catch (error) {
-    console.error("Error deleting student:", error);
-    alert(error.message);
-  }
-};
+
+    if (!confirmed) {
+      return;
+    }
+
+
+    try {
+
+      // Check Firebase login
+
+      const user = auth.currentUser;
+
+      if (!user) {
+        throw new Error("User is not logged in");
+      }
+
+      // Get Firebase ID token
+
+      const token = await user.getIdToken();
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/students/${student._id}`,
+        {
+          method: "DELETE",
+
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+
+      const data = await response.json();
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          data.error ||
+          data.message ||
+          "Failed to delete student"
+        );
+
+      }
+
+
+      // Remove deleted student
+      // from frontend list
+
+      setStudents(
+        students.filter(
+          (item) =>
+            item._id !== student._id
+        )
+      );
+
+
+      alert(
+        `Student ID ${studentId} deleted successfully.`
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Error deleting student:",
+        error
+      );
+
+      alert(error.message);
+
+    }
+
+  };
+
 
   // ===========================
   // EDIT STUDENT
@@ -174,73 +324,135 @@ const handleAddStudent = async () => {
 
   const handleEditStudent = (student) => {
 
-    setNewStudent(student);
+    setNewStudent({
+      studentId: student.studentId || "",
+      studentName: student.studentName || "",
+      studentClass: student.studentClass || "",
+      section: student.section || "",
+      contactNumber: student.contactNumber || "",
+      assignedRoute: student.assignedRoute || "",
+      assignedBus: student.assignedBus || "",
+      status: student.status || "Active",
+    });
 
     setEditingStudent(student);
 
   };
 
+
   // ===========================
   // UPDATE STUDENT
   // ===========================
 
- const handleUpdateStudent = async () => {
-  const duplicateStudent = students.some(
-    (student) =>
-      student.studentId === newStudent.studentId &&
-      student._id !== editingStudent._id
-  );
+  const handleUpdateStudent = async () => {
 
-  if (duplicateStudent) {
-    alert("Student ID already exists!");
-    return;
-  }
+    // Prevent duplicate Student ID
 
-  try {
-    const response = await fetch(
-      `http://localhost:5000/api/students/${editingStudent._id}`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newStudent),
-      }
+    const duplicateStudent = students.some(
+      (student) =>
+        student.studentId === newStudent.studentId &&
+        student._id !== editingStudent._id
     );
 
-    const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(
-        data.error || data.message || "Failed to update student"
-      );
+    if (duplicateStudent) {
+
+      alert("Student ID already exists!");
+
+      return;
+
     }
 
-    setStudents(
-      students.map((student) =>
-        student._id === editingStudent._id ? data : student
-      )
-    );
 
-    setEditingStudent(null);
+    try {
 
-    setNewStudent({
-      studentId: "",
-      studentName: "",
-      studentClass: "",
-      section: "",
-      contactNumber: "",
-      assignedRoute: "",
-      assignedBus: "",
-      status: "Active",
-    });
+      // Check Firebase login
 
-    alert("Student updated successfully!");
-  } catch (error) {
-    console.error("Error updating student:", error);
-    alert(error.message);
-  }
-};
+      const user = auth.currentUser;
+
+      if (!user) {
+        throw new Error("User is not logged in");
+      }
+
+      // Get Firebase ID token
+
+      const token = await user.getIdToken();
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/students/${editingStudent._id}`,
+        {
+          method: "PUT",
+
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+
+          body: JSON.stringify(newStudent),
+        }
+      );
+
+
+      const data = await response.json();
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          data.error ||
+          data.message ||
+          "Failed to update student"
+        );
+
+      }
+
+
+      // Replace old student
+      // with updated student
+
+      setStudents(
+        students.map((student) =>
+          student._id === editingStudent._id
+            ? data
+            : student
+        )
+      );
+
+
+      // Exit edit mode
+
+      setEditingStudent(null);
+
+
+      // Reset form
+
+      setNewStudent({
+        studentId: "",
+        studentName: "",
+        studentClass: "",
+        section: "",
+        contactNumber: "",
+        assignedRoute: "",
+        assignedBus: "",
+        status: "Active",
+      });
+
+
+      alert("Student updated successfully!");
+
+    } catch (error) {
+
+      console.error(
+        "Error updating student:",
+        error
+      );
+
+      alert(error.message);
+
+    }
+
+  };
+
 
   // ===========================
   // HANDLE CANCEL
@@ -262,14 +474,21 @@ const handleAddStudent = async () => {
     });
 
   };
-    return (
+
+
+  // ===========================
+  // STUDENT MANAGEMENT UI
+  // ===========================
+
+  return (
+
     <div className="dashboard">
 
       <Sidebar />
 
       <div className="main-content">
 
-        <Navbar userEmail="Admin" />
+        <Navbar userEmail={userEmail} />
 
         <h1>🎓 Student Management</h1>
 
@@ -277,9 +496,19 @@ const handleAddStudent = async () => {
           Manage all students from this page.
         </p>
 
+
+        {/* ===========================
+            STUDENT FORM
+        =========================== */}
+
         <div className="add-bus-form">
 
-          <h2>Add New Student</h2>
+          <h2>
+            {editingStudent
+              ? "Edit Student"
+              : "Add New Student"}
+          </h2>
+
 
           <div className="form-grid">
 
@@ -291,6 +520,7 @@ const handleAddStudent = async () => {
               onChange={handleChange}
             />
 
+
             <input
               type="text"
               name="studentName"
@@ -298,6 +528,7 @@ const handleAddStudent = async () => {
               value={newStudent.studentName}
               onChange={handleChange}
             />
+
 
             <input
               type="text"
@@ -307,6 +538,7 @@ const handleAddStudent = async () => {
               onChange={handleChange}
             />
 
+
             <input
               type="text"
               name="section"
@@ -314,6 +546,7 @@ const handleAddStudent = async () => {
               value={newStudent.section}
               onChange={handleChange}
             />
+
 
             <input
               type="text"
@@ -323,6 +556,7 @@ const handleAddStudent = async () => {
               onChange={handleChange}
             />
 
+
             <input
               type="text"
               name="assignedRoute"
@@ -330,6 +564,7 @@ const handleAddStudent = async () => {
               value={newStudent.assignedRoute}
               onChange={handleChange}
             />
+
 
             <input
               type="text"
@@ -339,16 +574,24 @@ const handleAddStudent = async () => {
               onChange={handleChange}
             />
 
+
             <select
               name="status"
               value={newStudent.status}
               onChange={handleChange}
             >
+
               <option>Active</option>
               <option>Inactive</option>
+
             </select>
 
           </div>
+
+
+          {/* ===========================
+              ADD / UPDATE BUTTONS
+          =========================== */}
 
           <div className="button-group">
 
@@ -360,29 +603,40 @@ const handleAddStudent = async () => {
                   : handleAddStudent
               }
             >
+
               {editingStudent
                 ? "Update Student"
                 : "Add Student"}
+
             </button>
 
+
             {editingStudent && (
+
               <button
                 className="add-bus-btn cancel-btn"
                 onClick={handleCancel}
               >
                 Cancel
               </button>
+
             )}
 
           </div>
 
         </div>
 
+
+        {/* ===========================
+            STUDENT TABLE
+        =========================== */}
+
         <table className="bus-table">
 
           <thead>
 
             <tr>
+
               <th>Student ID</th>
               <th>Student Name</th>
               <th>Class</th>
@@ -392,9 +646,11 @@ const handleAddStudent = async () => {
               <th>Assigned Bus</th>
               <th>Status</th>
               <th>Action</th>
+
             </tr>
 
           </thead>
+
 
           <tbody>
 
@@ -402,26 +658,59 @@ const handleAddStudent = async () => {
 
               <tr key={student.studentId}>
 
-                <td>{student.studentId}</td>
-                <td>{student.studentName}</td>
-                <td>{student.studentClass}</td>
-                <td>{student.section}</td>
-                <td>{student.contactNumber}</td>
-                <td>{student.assignedRoute}</td>
-                <td>{student.assignedBus}</td>
-                <td>{student.status}</td>
+                <td>
+                  {student.studentId}
+                </td>
+
+                <td>
+                  {student.studentName}
+                </td>
+
+                <td>
+                  {student.studentClass}
+                </td>
+
+                <td>
+                  {student.section}
+                </td>
+
+                <td>
+                  {student.contactNumber}
+                </td>
+
+                <td>
+                  {student.assignedRoute}
+                </td>
+
+                <td>
+                  {student.assignedBus}
+                </td>
+
+                <td>
+                  {student.status}
+                </td>
+
 
                 <td>
 
+                  {/* EDIT STUDENT BUTTON */}
+
                   <button
-                    onClick={() => handleEditStudent(student)}
+                    onClick={() =>
+                      handleEditStudent(student)
+                    }
                   >
                     Edit
                   </button>
 
+
+                  {/* DELETE STUDENT BUTTON */}
+
                   <button
                     onClick={() =>
-                      handleDeleteStudent(student.studentId)
+                      handleDeleteStudent(
+                        student.studentId
+                      )
                     }
                   >
                     Delete
@@ -440,7 +729,9 @@ const handleAddStudent = async () => {
       </div>
 
     </div>
+
   );
+
 }
 
 export default StudentManagement;

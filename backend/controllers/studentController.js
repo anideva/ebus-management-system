@@ -1,6 +1,9 @@
 import Student from "../models/student.js";
 
-// GET all students
+// ===========================
+// GET ALL STUDENTS
+// ===========================
+
 export const getStudents = async (req, res) => {
   try {
     const students = await Student.find();
@@ -14,7 +17,11 @@ export const getStudents = async (req, res) => {
   }
 };
 
-// CREATE a new student
+
+// ===========================
+// CREATE A NEW STUDENT
+// ===========================
+
 export const createStudent = async (req, res) => {
   try {
     const student = new Student(req.body);
@@ -30,14 +37,18 @@ export const createStudent = async (req, res) => {
   }
 };
 
-// UPDATE a student
+
+// ===========================
+// UPDATE A STUDENT
+// ===========================
+
 export const updateStudent = async (req, res) => {
   try {
     const updatedStudent = await Student.findByIdAndUpdate(
       req.params.id,
       req.body,
       {
-        new: true,
+        returnDocument: "after",
         runValidators: true,
       }
     );
@@ -57,7 +68,11 @@ export const updateStudent = async (req, res) => {
   }
 };
 
-// DELETE a student
+
+// ===========================
+// DELETE A STUDENT
+// ===========================
+
 export const deleteStudent = async (req, res) => {
   try {
     const deletedStudent = await Student.findByIdAndDelete(
