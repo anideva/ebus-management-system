@@ -44,7 +44,9 @@
   --success-light: #f0fdf4;
 
   /* Sidebar */
-  --sidebar-width: 230px;
+  --sidebar-collapsed-width: 72px;
+  --sidebar-expanded-width: 230px;
+  --sidebar-current-width: var(--sidebar-collapsed-width);
   --sidebar-bg: #0f172a;
   --sidebar-border: #1e293b;
   --sidebar-text: #f8fafc;
@@ -123,7 +125,9 @@
   --success-light: rgba(34, 197, 94, 0.15);
 
   /* Sidebar */
-  --sidebar-width: 230px;
+  --sidebar-collapsed-width: 72px;
+  --sidebar-expanded-width: 230px;
+  --sidebar-current-width: var(--sidebar-collapsed-width);
   --sidebar-bg: #0b0f17;
   --sidebar-border: #1e293b;
   --sidebar-text: #f8fafc;
