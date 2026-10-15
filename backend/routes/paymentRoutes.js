@@ -7,36 +7,31 @@ import {
   deletePayment,
 } from "../controllers/paymentController.js";
 
-import verifyToken from "../middleware/authMiddleware.js";
+import { verifyToken, requireRole } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+
+// Require admin authentication for all payment management endpoints
+router.use(verifyToken, requireRole(["admin"]));
 
 // ===========================
 // GET ALL PAYMENTS
 // ===========================
-
-router.get("/", verifyToken, getPayments);
-
+router.get("/", getPayments);
 
 // ===========================
 // CREATE PAYMENT
 // ===========================
-
-router.post("/", verifyToken, createPayment);
-
+router.post("/", createPayment);
 
 // ===========================
 // UPDATE PAYMENT
 // ===========================
-
-router.put("/:id", verifyToken, updatePayment);
-
+router.put("/:id", updatePayment);
 
 // ===========================
 // DELETE PAYMENT
 // ===========================
-
-router.delete("/:id", verifyToken, deletePayment);
-
+router.delete("/:id", deletePayment);
 
 export default router;

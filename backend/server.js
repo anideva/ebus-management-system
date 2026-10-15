@@ -13,6 +13,8 @@ import studentRoutes from "./routes/studentRoutes.js";
 import passRoutes from "./routes/passRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+import portalRoutes from "./routes/portalRoutes.js";
 
 if (!process.env.MONGO_URI) {
   console.error("⚠️ WARNING: MONGO_URI is not set in environment variables!");
@@ -40,6 +42,8 @@ app.use("/api/students", studentRoutes);
 app.use("/api/passes", passRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/portal", portalRoutes);
 
 app.get("/", (req, res) => {
   res.json({

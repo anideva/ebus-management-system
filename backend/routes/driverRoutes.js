@@ -7,36 +7,31 @@ import {
   deleteDriver,
 } from "../controllers/driverController.js";
 
-import verifyToken from "../middleware/authMiddleware.js";
+import { verifyToken, requireRole } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+
+// Require admin authentication for all driver management endpoints
+router.use(verifyToken, requireRole(["admin"]));
 
 // ===========================
 // GET ALL DRIVERS
 // ===========================
-
-router.get("/", verifyToken, getDrivers);
-
+router.get("/", getDrivers);
 
 // ===========================
 // CREATE DRIVER
 // ===========================
-
-router.post("/", verifyToken, createDriver);
-
+router.post("/", createDriver);
 
 // ===========================
 // UPDATE DRIVER
 // ===========================
-
-router.put("/:id", verifyToken, updateDriver);
-
+router.put("/:id", updateDriver);
 
 // ===========================
 // DELETE DRIVER
 // ===========================
-
-router.delete("/:id", verifyToken, deleteDriver);
-
+router.delete("/:id", deleteDriver);
 
 export default router;

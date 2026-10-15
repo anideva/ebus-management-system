@@ -49,6 +49,17 @@ const passSchema = new mongoose.Schema(
       enum: ["Active", "Expired"],
       default: "Active",
     },
+
+    userId: {
+      type: String,
+      index: true,
+    },
+
+    userEmail: {
+      type: String,
+      lowercase: true,
+      trim: true,
+    },
   },
   {
     timestamps: true,

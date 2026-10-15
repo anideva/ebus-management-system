@@ -7,16 +7,16 @@ import {
   updateBus,
 } from "../controllers/busController.js";
 
-import verifyToken from "../middleware/authMiddleware.js";
+import { verifyToken, requireRole } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", verifyToken, getBuses);
+// Require admin authentication for all bus management endpoints
+router.use(verifyToken, requireRole(["admin"]));
 
-router.post("/", verifyToken, createBus);
-
-router.delete("/:id", verifyToken, deleteBus);
-
-router.put("/:id", verifyToken, updateBus);
+router.get("/", getBuses);
+router.post("/", createBus);
+router.delete("/:id", deleteBus);
+router.put("/:id", updateBus);
 
 export default router;

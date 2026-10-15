@@ -7,13 +7,16 @@ import {
   deleteRoute,
 } from "../controllers/routeController.js";
 
-import verifyToken from "../middleware/authMiddleware.js";
+import { verifyToken, requireRole } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", verifyToken, getRoutes);
-router.post("/", verifyToken, createRoute);
-router.put("/:id", verifyToken, updateRoute);
-router.delete("/:id", verifyToken, deleteRoute);
+// Require admin authentication for all route management endpoints
+router.use(verifyToken, requireRole(["admin"]));
+
+router.get("/", getRoutes);
+router.post("/", createRoute);
+router.put("/:id", updateRoute);
+router.delete("/:id", deleteRoute);
 
 export default router;

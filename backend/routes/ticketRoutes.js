@@ -7,16 +7,16 @@ import {
   deleteTicket,
 } from "../controllers/ticketController.js";
 
-import verifyToken from "../middleware/authMiddleware.js";
+import { verifyToken, requireRole } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", verifyToken, getTickets);
+// Require admin authentication for all ticket management endpoints
+router.use(verifyToken, requireRole(["admin"]));
 
-router.post("/", verifyToken, createTicket);
-
-router.put("/:id", verifyToken, updateTicket);
-
-router.delete("/:id", verifyToken, deleteTicket);
+router.get("/", getTickets);
+router.post("/", createTicket);
+router.put("/:id", updateTicket);
+router.delete("/:id", deleteTicket);
 
 export default router;

@@ -4,17 +4,18 @@ import {
   getRecentActivity,
 } from "../controllers/dashboardController.js";
 
-import verifyToken from "../middleware/authMiddleware.js";
+import { verifyToken, requireRole } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+
+// Require admin authentication for dashboard activity endpoints
+router.use(verifyToken, requireRole(["admin"]));
 
 // ===========================
 // GET RECENT ACTIVITY
 // ===========================
-
 router.get(
   "/recent-activity",
-  verifyToken,
   getRecentActivity
 );
 

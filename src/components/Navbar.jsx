@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import "../styles/navbar.css";
 
@@ -71,6 +71,27 @@ function Navbar({ userName }) {
       </div>
 
       <div className="navbar-actions">
+        {/* Passenger Portal Switch Link */}
+        <Link
+          to="/passenger/book"
+          style={{
+            padding: "6px 12px",
+            fontSize: "0.82rem",
+            fontWeight: 500,
+            color: "var(--primary)",
+            backgroundColor: "var(--primary-light)",
+            borderRadius: "6px",
+            textDecoration: "none",
+            border: "1px solid var(--border-color)",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "4px",
+          }}
+          title="Open Passenger Booking Portal"
+        >
+          🎫 Passenger Portal
+        </Link>
+
         {/* Compact Theme Toggle */}
         <button
           type="button"

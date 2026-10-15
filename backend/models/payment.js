@@ -51,6 +51,17 @@ const paymentSchema = new mongoose.Schema(
       ],
       default: "Paid",
     },
+
+    userId: {
+      type: String,
+      index: true,
+    },
+
+    userEmail: {
+      type: String,
+      lowercase: true,
+      trim: true,
+    },
   },
   {
     timestamps: true,

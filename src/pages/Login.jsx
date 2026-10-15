@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { auth, googleProvider } from "../firebase";
 import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { useNavigate, Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 
 function Login() {
   // STATES
@@ -12,7 +13,15 @@ function Login() {
 
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { user, role, refreshRole } = useAuth();
   const isDarkMode = theme === "dark";
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (user && role) {
+      navigate(role === "admin" ? "/dashboard" : "/passenger/book", { replace: true });
+    }
+  }, [user, role, navigate]);
 
   // HANDLE USER EMAIL/PASSWORD LOGIN
   const handleLogin = async (e) => {
@@ -26,7 +35,8 @@ function Login() {
       setLoading(true);
       await signInWithEmailAndPassword(auth, email, password);
       alert("Login Successful");
-      navigate("/dashboard");
+      const userRole = await refreshRole();
+      navigate(userRole === "admin" ? "/dashboard" : "/passenger/book");
     } catch (error) {
       console.error("Firebase Error:", error);
       alert(error.message);
@@ -41,7 +51,8 @@ function Login() {
       setLoading(true);
       await signInWithPopup(auth, googleProvider);
       alert("Google Login Successful");
-      navigate("/dashboard");
+      const userRole = await refreshRole();
+      navigate(userRole === "admin" ? "/dashboard" : "/passenger/book");
     } catch (error) {
       console.error("Google Sign-In Error:", error);
       if (error.code === "auth/popup-closed-by-user") {

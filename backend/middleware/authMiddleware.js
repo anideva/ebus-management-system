@@ -1,6 +1,10 @@
 import admin from "../config/firebaseAdmin.js";
+import User from "../models/user.js";
 
-const verifyToken = async (req, res, next) => {
+/**
+ * Verify Firebase ID Token and resolve or provision user role in MongoDB.
+ */
+export const verifyToken = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
@@ -20,7 +24,64 @@ const verifyToken = async (req, res, next) => {
 
     const decodedToken = await admin.auth().verifyIdToken(token);
 
-    req.user = decodedToken;
+    // Parse configured admin emails from environment variable
+    const adminEmails = (process.env.ADMIN_EMAILS || "")
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+
+    const userEmail = (decodedToken.email || "").toLowerCase();
+    const isConfiguredAdmin = userEmail && adminEmails.includes(userEmail);
+
+    let role = "passenger";
+    let userDoc = null;
+
+    try {
+      userDoc = await User.findOne({ firebaseUid: decodedToken.uid });
+
+      if (!userDoc) {
+        // Public registration assigns 'passenger' by default.
+        // Only explicitly configured ADMIN_EMAILS accounts receive the admin role.
+        // Client-supplied roles or registration parameters are never accepted.
+        const initialRole = isConfiguredAdmin ? "admin" : "passenger";
+
+        userDoc = await User.create({
+          firebaseUid: decodedToken.uid,
+          email: userEmail,
+          displayName: decodedToken.name || "",
+          role: initialRole,
+        });
+        role = userDoc.role;
+      } else {
+        let needsSave = false;
+        // Promote to admin if specified in ADMIN_EMAILS
+        if (isConfiguredAdmin && userDoc.role !== "admin") {
+          userDoc.role = "admin";
+          needsSave = true;
+        }
+        if (decodedToken.name && userDoc.displayName !== decodedToken.name) {
+          userDoc.displayName = decodedToken.name;
+          needsSave = true;
+        }
+        if (userEmail && userDoc.email !== userEmail) {
+          userDoc.email = userEmail;
+          needsSave = true;
+        }
+        if (needsSave) {
+          await userDoc.save();
+        }
+        role = userDoc.role;
+      }
+    } catch (dbError) {
+      console.warn("User role lookup in DB failed, using fallback:", dbError.message);
+      role = isConfiguredAdmin ? "admin" : "passenger";
+    }
+
+    req.user = {
+      ...decodedToken,
+      role,
+      dbUser: userDoc,
+    };
 
     next();
   } catch (error) {
@@ -30,6 +91,30 @@ const verifyToken = async (req, res, next) => {
       message: "Unauthorized. Invalid or expired token.",
     });
   }
+};
+
+/**
+ * Middleware to restrict route access to specific roles (e.g. ['admin']).
+ */
+export const requireRole = (allowedRoles = []) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        message: "Unauthorized. Authentication required.",
+      });
+    }
+
+    const currentRole = req.user.role || "passenger";
+    if (!allowedRoles.includes(currentRole)) {
+      return res.status(403).json({
+        message: `Forbidden. Access denied for role '${currentRole}'. Required: [${allowedRoles.join(
+          ", "
+        )}].`,
+      });
+    }
+
+    next();
+  };
 };
 
 export default verifyToken;

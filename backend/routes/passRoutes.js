@@ -7,36 +7,31 @@ import {
   deletePass,
 } from "../controllers/passController.js";
 
-import verifyToken from "../middleware/authMiddleware.js";
+import { verifyToken, requireRole } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+
+// Require admin authentication for all pass management endpoints
+router.use(verifyToken, requireRole(["admin"]));
 
 // ===========================
 // GET ALL PASSES
 // ===========================
-
-router.get("/", verifyToken, getPasses);
-
+router.get("/", getPasses);
 
 // ===========================
 // CREATE PASS
 // ===========================
-
-router.post("/", verifyToken, createPass);
-
+router.post("/", createPass);
 
 // ===========================
 // UPDATE PASS
 // ===========================
-
-router.put("/:id", verifyToken, updatePass);
-
+router.put("/:id", updatePass);
 
 // ===========================
 // DELETE PASS
 // ===========================
-
-router.delete("/:id", verifyToken, deletePass);
-
+router.delete("/:id", deletePass);
 
 export default router;
