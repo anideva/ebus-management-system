@@ -1,4 +1,5 @@
 import Ticket from "../models/ticket.js";
+import Bus from "../models/bus.js";
 
 export const getTickets = async (req, res) => {
   try {
@@ -15,6 +16,28 @@ export const getTickets = async (req, res) => {
 
 export const createTicket = async (req, res) => {
   try {
+    const { busNumber } = req.body || {};
+
+    if (!busNumber) {
+      return res.status(400).json({
+        message: "busNumber is required",
+      });
+    }
+
+    const bus = await Bus.findOne({ busNumber });
+
+    if (!bus) {
+      return res.status(404).json({
+        message: `Cannot create ticket: Bus '${busNumber}' does not exist`,
+      });
+    }
+
+    if (bus.status !== "Active") {
+      return res.status(400).json({
+        message: `Cannot create ticket: Bus '${busNumber}' is not active (current status: '${bus.status}')`,
+      });
+    }
+
     const newTicket = await Ticket.create(req.body);
 
     res.status(201).json(newTicket);

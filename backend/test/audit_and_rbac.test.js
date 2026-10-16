@@ -1,6 +1,10 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { requireRole } from "../middleware/authMiddleware.js";
+import { deleteBus } from "../controllers/busController.js";
+import { createTicket } from "../controllers/ticketController.js";
+import Bus from "../models/bus.js";
+import Ticket from "../models/ticket.js";
 
 /**
  * ===================================================================
@@ -615,6 +619,391 @@ describe("8. Administrator CRUD Regression Verification across All 8 Modules", (
       assert.equal(statusSent, null, `Module ${mod.name} must not set error status for admin`);
       assert.equal(nextCalled, true, `Module ${mod.name} must call next() for admin`);
     });
+  });
+});
+
+describe("9. Two-Stage Bus Deletion Protection & Referential Integrity", () => {
+  const originalFindById = Bus.findById;
+  const originalCountDocuments = Ticket.countDocuments;
+  const originalFindByIdAndDelete = Bus.findByIdAndDelete;
+
+  const restoreMocks = () => {
+    Bus.findById = originalFindById;
+    Ticket.countDocuments = originalCountDocuments;
+    Bus.findByIdAndDelete = originalFindByIdAndDelete;
+  };
+
+  const createMockRes = () => {
+    let statusSent = null;
+    let jsonSent = null;
+    return {
+      status(code) {
+        statusSent = code;
+        return this;
+      },
+      json(data) {
+        jsonSent = data;
+        return this;
+      },
+      getStatus: () => statusSent,
+      getBody: () => jsonSent,
+    };
+  };
+
+  it("blocks deleting an active bus and instructs admin to change status to Maintenance first (returns HTTP 409)", async () => {
+    try {
+      let countDocumentsCalled = false;
+      let findByIdAndDeleteCalled = false;
+
+      Bus.findById = async (id) => {
+        assert.equal(id, "bus-act-101");
+        return {
+          _id: "bus-act-101",
+          busNumber: "BUS-101",
+          busName: "Metro Commuter",
+          status: "Active",
+        };
+      };
+
+      Ticket.countDocuments = async () => {
+        countDocumentsCalled = true;
+      };
+
+      Bus.findByIdAndDelete = async () => {
+        findByIdAndDeleteCalled = true;
+      };
+
+      const req = { params: { id: "bus-act-101" } };
+      const res = createMockRes();
+
+      await deleteBus(req, res);
+
+      assert.equal(res.getStatus(), 409);
+      assert.match(
+        res.getBody().message,
+        /Cannot delete active bus BUS-101.*change the bus status to 'Maintenance' first/i
+      );
+      assert.equal(countDocumentsCalled, false, "Should not check tickets for active bus");
+      assert.equal(findByIdAndDeleteCalled, false, "Active bus must never be deleted directly");
+    } finally {
+      restoreMocks();
+    }
+  });
+
+  it("blocks deleting a maintenance bus when active booked tickets exist (returns HTTP 409 Conflict)", async () => {
+    try {
+      let findByIdAndDeleteCalled = false;
+      let ticketQueryFilter = null;
+
+      Bus.findById = async (id) => {
+        assert.equal(id, "bus-maint-202");
+        return {
+          _id: "bus-maint-202",
+          busNumber: "BUS-202",
+          busName: "City Express",
+          status: "Maintenance",
+        };
+      };
+
+      Ticket.countDocuments = async (filter) => {
+        ticketQueryFilter = filter;
+        return 3; // 3 active tickets exist
+      };
+
+      Bus.findByIdAndDelete = async () => {
+        findByIdAndDeleteCalled = true;
+      };
+
+      const req = { params: { id: "bus-maint-202" } };
+      const res = createMockRes();
+
+      await deleteBus(req, res);
+
+      assert.equal(res.getStatus(), 409);
+      assert.deepEqual(ticketQueryFilter, {
+        busNumber: "BUS-202",
+        status: "Booked",
+      });
+      assert.match(
+        res.getBody().message,
+        /Cannot delete bus BUS-202.*3 active booked ticket\(s\)/i
+      );
+      assert.equal(res.getBody().activeTicketsCount, 3);
+      assert.equal(findByIdAndDeleteCalled, false, "Maintenance bus must not be deleted when active tickets exist");
+    } finally {
+      restoreMocks();
+    }
+  });
+
+  it("succeeds deleting a maintenance bus when no booked tickets exist (returns HTTP 200)", async () => {
+    try {
+      let deletedId = null;
+
+      Bus.findById = async (id) => ({
+        _id: id,
+        busNumber: "BUS-303",
+        busName: "Highway Cruiser",
+        status: "Maintenance",
+      });
+
+      Ticket.countDocuments = async (filter) => {
+        assert.deepEqual(filter, {
+          busNumber: "BUS-303",
+          status: "Booked",
+        });
+        return 0; // No active tickets
+      };
+
+      Bus.findByIdAndDelete = async (id) => {
+        deletedId = id;
+        return {
+          _id: id,
+          busNumber: "BUS-303",
+          busName: "Highway Cruiser",
+          status: "Maintenance",
+        };
+      };
+
+      const req = { params: { id: "bus-xyz-789" } };
+      const res = createMockRes();
+
+      await deleteBus(req, res);
+
+      assert.equal(res.getStatus(), 200);
+      assert.equal(deletedId, "bus-xyz-789");
+      assert.equal(res.getBody().message, "Bus deleted successfully");
+      assert.equal(res.getBody().bus._id, "bus-xyz-789");
+    } finally {
+      restoreMocks();
+    }
+  });
+
+  it("returns HTTP 404 when attempting to delete a nonexistent bus", async () => {
+    try {
+      let countDocumentsCalled = false;
+      let findByIdAndDeleteCalled = false;
+
+      Bus.findById = async () => null;
+      Ticket.countDocuments = async () => {
+        countDocumentsCalled = true;
+      };
+      Bus.findByIdAndDelete = async () => {
+        findByIdAndDeleteCalled = true;
+      };
+
+      const req = { params: { id: "nonexistent-bus-id" } };
+      const res = createMockRes();
+
+      await deleteBus(req, res);
+
+      assert.equal(res.getStatus(), 404);
+      assert.equal(res.getBody().message, "Bus not found");
+      assert.equal(countDocumentsCalled, false, "Should not check tickets if bus does not exist");
+      assert.equal(findByIdAndDeleteCalled, false, "Should not call delete if bus does not exist");
+    } finally {
+      restoreMocks();
+    }
+  });
+
+  it("handles database errors gracefully and returns the expected error response (HTTP 500)", async () => {
+    try {
+      // Test DB error during Bus.findById
+      Bus.findById = async () => {
+        throw new Error("MongoDB connection timeout");
+      };
+
+      const req = { params: { id: "bus-err-1" } };
+      const res = createMockRes();
+
+      await deleteBus(req, res);
+
+      assert.equal(res.getStatus(), 500);
+      assert.equal(res.getBody().message, "Failed to delete bus");
+      assert.equal(res.getBody().error, "MongoDB connection timeout");
+
+      // Test DB error during Ticket.countDocuments for Maintenance bus
+      Bus.findById = async (id) => ({
+        _id: id,
+        busNumber: "BUS-ERR",
+        status: "Maintenance",
+      });
+      Ticket.countDocuments = async () => {
+        throw new Error("Ticket collection read failure");
+      };
+
+      const req2 = { params: { id: "bus-err-2" } };
+      const res2 = createMockRes();
+
+      await deleteBus(req2, res2);
+
+      assert.equal(res2.getStatus(), 500);
+      assert.equal(res2.getBody().message, "Failed to delete bus");
+      assert.equal(res2.getBody().error, "Ticket collection read failure");
+    } finally {
+      restoreMocks();
+    }
+  });
+});
+
+describe("10. Administrative Ticket Creation Bus Validation (createTicket)", () => {
+  const originalFindOne = Bus.findOne;
+  const originalCreate = Ticket.create;
+
+  const restoreMocks = () => {
+    Bus.findOne = originalFindOne;
+    Ticket.create = originalCreate;
+  };
+
+  const createMockRes = () => {
+    let statusSent = null;
+    let jsonSent = null;
+    return {
+      status(code) {
+        statusSent = code;
+        return this;
+      },
+      json(data) {
+        jsonSent = data;
+        return this;
+      },
+      getStatus: () => statusSent,
+      getBody: () => jsonSent,
+    };
+  };
+
+  it("succeeds creating a ticket when referenced bus exists and is Active (returns HTTP 201)", async () => {
+    try {
+      let createPayload = null;
+
+      Bus.findOne = async (filter) => {
+        assert.equal(filter.busNumber, "BUS-ACT-1");
+        return {
+          _id: "bus-id-1",
+          busNumber: "BUS-ACT-1",
+          status: "Active",
+          capacity: 40,
+        };
+      };
+
+      Ticket.create = async (body) => {
+        createPayload = body;
+        return {
+          _id: "tkt-id-1",
+          ticketId: "TKT-ADM-1",
+          ...body,
+        };
+      };
+
+      const req = {
+        body: {
+          ticketId: "TKT-ADM-1",
+          passengerName: "Test Passenger",
+          busNumber: "BUS-ACT-1",
+          routeName: "Route A",
+          journeyDate: "2026-11-01",
+          seatNumber: "5",
+          fare: 100,
+          status: "Booked",
+        },
+      };
+      const res = createMockRes();
+
+      await createTicket(req, res);
+
+      assert.equal(res.getStatus(), 201);
+      assert.equal(createPayload.busNumber, "BUS-ACT-1");
+      assert.equal(res.getBody().ticketId, "TKT-ADM-1");
+    } finally {
+      restoreMocks();
+    }
+  });
+
+  it("blocks ticket creation when referenced bus is in Maintenance (returns HTTP 400)", async () => {
+    try {
+      let createCalled = false;
+
+      Bus.findOne = async (filter) => {
+        assert.equal(filter.busNumber, "BUS-MAINT-1");
+        return {
+          _id: "bus-id-2",
+          busNumber: "BUS-MAINT-1",
+          status: "Maintenance",
+        };
+      };
+
+      Ticket.create = async () => {
+        createCalled = true;
+      };
+
+      const req = {
+        body: {
+          busNumber: "BUS-MAINT-1",
+          passengerName: "Commuter",
+          journeyDate: "2026-11-01",
+          seatNumber: "10",
+        },
+      };
+      const res = createMockRes();
+
+      await createTicket(req, res);
+
+      assert.equal(res.getStatus(), 400);
+      assert.match(
+        res.getBody().message,
+        /Cannot create ticket.*BUS-MAINT-1.*is not active.*Maintenance/i
+      );
+      assert.equal(createCalled, false, "Ticket must not be created for Maintenance bus");
+    } finally {
+      restoreMocks();
+    }
+  });
+
+  it("blocks ticket creation when referenced bus does not exist (returns HTTP 404)", async () => {
+    try {
+      let createCalled = false;
+
+      Bus.findOne = async () => null;
+      Ticket.create = async () => {
+        createCalled = true;
+      };
+
+      const req = {
+        body: {
+          busNumber: "GHOST-999",
+          passengerName: "Commuter",
+        },
+      };
+      const res = createMockRes();
+
+      await createTicket(req, res);
+
+      assert.equal(res.getStatus(), 404);
+      assert.match(
+        res.getBody().message,
+        /Cannot create ticket.*GHOST-999.*does not exist/i
+      );
+      assert.equal(createCalled, false, "Ticket must not be created for nonexistent bus");
+    } finally {
+      restoreMocks();
+    }
+  });
+
+  it("blocks ticket creation when busNumber is missing from payload (returns HTTP 400)", async () => {
+    try {
+      const req = {
+        body: {
+          passengerName: "Nameless Bus Rider",
+        },
+      };
+      const res = createMockRes();
+
+      await createTicket(req, res);
+
+      assert.equal(res.getStatus(), 400);
+      assert.match(res.getBody().message, /busNumber is required/i);
+    } finally {
+      restoreMocks();
+    }
   });
 });
 
