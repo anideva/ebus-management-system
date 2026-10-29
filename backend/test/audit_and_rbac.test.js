@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import { requireRole } from "../middleware/authMiddleware.js";
 import { deleteBus } from "../controllers/busController.js";
 import { createTicket } from "../controllers/ticketController.js";
+import { getAvailableServices } from "../controllers/portalController.js";
 import Bus from "../models/bus.js";
+import Route from "../models/route.js";
 import Ticket from "../models/ticket.js";
 
 /**
@@ -1007,3 +1009,162 @@ describe("10. Administrative Ticket Creation Bus Validation (createTicket)", () 
   });
 });
 
+describe("11. Bus-Route Linking Contract & Service Search (getAvailableServices)", () => {
+  const originalBusFind = Bus.find;
+  const originalRouteFind = Route.find;
+
+  const restoreMocks = () => {
+    Bus.find = originalBusFind;
+    Route.find = originalRouteFind;
+  };
+
+  const createMockRes = () => {
+    let jsonSent = null;
+    let statusSent = 200;
+    return {
+      status(code) {
+        statusSent = code;
+        return this;
+      },
+      json(data) {
+        jsonSent = data;
+        return this;
+      },
+      getStatus: () => statusSent,
+      getBody: () => jsonSent,
+    };
+  };
+
+  it("correctly joins Bus with Route when bus.route matches route.routeName", async () => {
+    try {
+      Bus.find = async (filter) => {
+        assert.equal(filter.status, "Active");
+        return [
+          {
+            _id: "bus-1",
+            busNumber: "AS-01-KB-1001",
+            busName: "ASTC Brahmaputra",
+            busType: "AC Deluxe",
+            driver: "Ramesh Das",
+            route: "Kharupetia - Guwahati Express",
+            capacity: 40,
+            fare: 180,
+          },
+        ];
+      };
+
+      Route.find = async (filter) => {
+        assert.equal(filter.status, "Active");
+        return [
+          {
+            _id: "rt-1",
+            routeId: "RT-01",
+            routeName: "Kharupetia - Guwahati Express",
+            source: "Kharupetia",
+            destination: "Guwahati",
+            stops: ["Mangaldai", "Sipajhar", "Baihata Chariali"],
+            distance: 85,
+            estimatedTime: 150,
+            status: "Active",
+          },
+        ];
+      };
+
+      const req = { query: {} };
+      const res = createMockRes();
+
+      await getAvailableServices(req, res);
+
+      const services = res.getBody();
+      assert.equal(services.length, 1);
+      assert.equal(services[0].busNumber, "AS-01-KB-1001");
+      assert.equal(services[0].source, "Kharupetia");
+      assert.equal(services[0].destination, "Guwahati");
+      assert.equal(services[0].distance, 85);
+      assert.equal(services[0].estimatedTime, 150);
+      assert.deepEqual(services[0].stops, ["Mangaldai", "Sipajhar", "Baihata Chariali"]);
+    } finally {
+      restoreMocks();
+    }
+  });
+
+  it("falls back to default endpoints when bus.route does not match any active route", async () => {
+    try {
+      Bus.find = async () => [
+        {
+          _id: "bus-2",
+          busNumber: "AS-99-ZZ-9999",
+          busName: "Orphan Bus",
+          busType: "Standard",
+          driver: "Unknown",
+          route: "Legacy Unlinked Route Name",
+          capacity: 30,
+          fare: 100,
+        },
+      ];
+
+      Route.find = async () => [];
+
+      const req = { query: {} };
+      const res = createMockRes();
+
+      await getAvailableServices(req, res);
+
+      const services = res.getBody();
+      assert.equal(services.length, 1);
+      assert.equal(services[0].source, "Main Terminal");
+      assert.equal(services[0].destination, "City Center");
+      assert.deepEqual(services[0].stops, []);
+    } finally {
+      restoreMocks();
+    }
+  });
+
+  it("filters services by source and destination query (including intermediate stops)", async () => {
+    try {
+      Bus.find = async () => [
+        {
+          _id: "bus-1",
+          busNumber: "BUS-KHP",
+          route: "Route KHP",
+          capacity: 40,
+          fare: 180,
+        },
+        {
+          _id: "bus-2",
+          busNumber: "BUS-TEZ",
+          route: "Route TEZ",
+          capacity: 36,
+          fare: 350,
+        },
+      ];
+
+      Route.find = async () => [
+        {
+          routeName: "Route KHP",
+          source: "Kharupetia",
+          destination: "Guwahati",
+          stops: ["Mangaldai", "Sipajhar"],
+        },
+        {
+          routeName: "Route TEZ",
+          source: "Tezpur",
+          destination: "Guwahati",
+          stops: ["Nagaon", "Jagiroad"],
+        },
+      ];
+
+      // Query matching intermediate stop "Mangaldai"
+      const req = { query: { source: "Mangaldai", destination: "Guwahati" } };
+      const res = createMockRes();
+
+      await getAvailableServices(req, res);
+
+      const services = res.getBody();
+      assert.equal(services.length, 1);
+      assert.equal(services[0].busNumber, "BUS-KHP");
+    } finally {
+      restoreMocks();
+    }
+  });
+});

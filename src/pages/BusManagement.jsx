@@ -26,6 +26,9 @@ const [newBus, setNewBus] = useState({
 
 const [editingBus, setEditingBus] = useState(null);
 const [buses, setBuses] = useState([]);
+const [routes, setRoutes] = useState([]);
+const [loadingRoutes, setLoadingRoutes] = useState(true);
+const [routesError, setRoutesError] = useState("");
 const [userEmail, setUserEmail] = useState("Admin");
 
 useEffect(() => {
@@ -42,24 +45,55 @@ useEffect(() => {
     try {
       const token = await user.getIdToken();
 
-      const response = await fetch(
-        `${API_BASE_URL}/api/buses`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      // Fetch buses
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/buses`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch buses");
+        if (!response.ok) {
+          throw new Error("Failed to fetch buses");
+        }
+
+        const data = await response.json();
+        setBuses(data);
+      } catch (busError) {
+        console.error("Error fetching buses:", busError);
       }
 
-      const data = await response.json();
+      // Fetch routes for dropdown
+      try {
+        setLoadingRoutes(true);
+        const routesResponse = await fetch(
+          `${API_BASE_URL}/api/routes`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-      setBuses(data);
-    } catch (error) {
-      console.error("Error fetching buses:", error);
+        if (!routesResponse.ok) {
+          throw new Error("Failed to fetch routes");
+        }
+
+        const routesData = await routesResponse.json();
+        setRoutes(routesData);
+        setRoutesError("");
+      } catch (routeError) {
+        console.error("Error fetching routes:", routeError);
+        setRoutesError("Failed to load routes. Please refresh or try again.");
+      } finally {
+        setLoadingRoutes(false);
+      }
+    } catch (authError) {
+      console.error("Error retrieving user auth token:", authError);
+      setLoadingRoutes(false);
     }
   });
 
@@ -77,15 +111,15 @@ const handleChange = (e) => {
 /// PREVENT DUBLICATE BUS NUMBERS while adding the bus.
 const handleAddBus = async () => {
   if (
-    !newBus.busNumber.trim() ||
-    !newBus.busName.trim() ||
-    !newBus.busType.trim() ||
-    !newBus.driver.trim() ||
-    !newBus.route.trim() ||
+    !newBus.busNumber?.trim() ||
+    !newBus.busName?.trim() ||
+    !newBus.busType?.trim() ||
+    !newBus.driver?.trim() ||
+    !newBus.route?.trim() ||
     !newBus.capacity ||
     !newBus.fare
   ) {
-    alert("Please fill in all the fields.");
+    alert("Please fill in all the fields, including selecting a route.");
     return;
   }
 
@@ -186,6 +220,19 @@ const handleEditBus = (bus) => {
 
 //Update the selected bus and refresh the bus list
 const handleUpdateBus = async () => {
+  if (
+    !newBus.busNumber?.trim() ||
+    !newBus.busName?.trim() ||
+    !newBus.busType?.trim() ||
+    !newBus.driver?.trim() ||
+    !newBus.route?.trim() ||
+    !newBus.capacity ||
+    !newBus.fare
+  ) {
+    alert("Please fill in all the fields, including selecting a route.");
+    return;
+  }
+
   try {
     const user = auth.currentUser;
 
@@ -267,7 +314,22 @@ const handleCancel = () => {
           Manage all buses from this page.
         </p>
         <div className="add-bus-form">
-  <h2>Add New Bus</h2>
+  <h2>{editingBus ? "Edit Bus Details" : "Add New Bus"}</h2>
+
+  {routesError && (
+    <div
+      style={{
+        backgroundColor: "var(--danger-light, #fed7d7)",
+        color: "var(--danger, #c53030)",
+        padding: "8px 12px",
+        borderRadius: "6px",
+        marginBottom: "14px",
+        fontSize: "0.85rem",
+      }}
+    >
+      ⚠️ {routesError}
+    </div>
+  )}
 
   <div className="form-grid">
     <input 
@@ -309,13 +371,36 @@ const handleCancel = () => {
   onChange={handleChange}
 />
 
-    <input
-  type="text"
-  name="route"
-  placeholder="Route"
-  value={newBus.route}
-  onChange={handleChange}
-/>
+    <select
+      name="route"
+      value={newBus.route}
+      onChange={handleChange}
+      disabled={loadingRoutes || (routes.length === 0 && !newBus.route)}
+    >
+      {loadingRoutes ? (
+        <option value="">Loading available routes...</option>
+      ) : routesError ? (
+        <option value="">⚠️ Error loading routes</option>
+      ) : routes.length === 0 ? (
+        <option value="">No routes found — create a route first</option>
+      ) : (
+        <option value="">-- Select Route --</option>
+      )}
+
+      {/* Preserve existing route when editing if it is unlisted or legacy */}
+      {newBus.route && !routes.some((r) => r.routeName === newBus.route) && (
+        <option value={newBus.route}>
+          {newBus.route} (Current / Unlisted Route)
+        </option>
+      )}
+
+      {routes.map((route) => (
+        <option key={route._id || route.routeId} value={route.routeName}>
+          {route.routeName} ({route.source} ➔ {route.destination})
+          {route.status && route.status !== "Active" ? " [Inactive]" : ""}
+        </option>
+      ))}
+    </select>
 
     <input
   type="number"
