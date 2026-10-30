@@ -4,6 +4,7 @@ import Route from "../models/route.js";
 import Ticket from "../models/ticket.js";
 import Payment from "../models/payment.js";
 import Pass from "../models/pass.js";
+import { seedDemoDataService } from "../utils/demoData.js";
 
 /**
  * GET /api/portal/services
@@ -13,10 +14,23 @@ export const getAvailableServices = async (req, res) => {
   try {
     const { source, destination } = req.query;
 
-    const [buses, routes] = await Promise.all([
+    let [buses, routes] = await Promise.all([
       Bus.find({ status: "Active" }),
       Route.find({ status: "Active" }),
     ]);
+
+    // If database has 0 active buses (e.g. freshly initialized database), auto-seed demo data
+    if (buses.length === 0 && process.env.NODE_ENV !== "test") {
+      try {
+        await seedDemoDataService();
+        [buses, routes] = await Promise.all([
+          Bus.find({ status: "Active" }),
+          Route.find({ status: "Active" }),
+        ]);
+      } catch (seedErr) {
+        console.warn("Auto-seeding during getAvailableServices encountered an issue:", seedErr.message);
+      }
+    }
 
     const routeMap = new Map();
     routes.forEach((r) => {
@@ -25,20 +39,28 @@ export const getAvailableServices = async (req, res) => {
 
     let services = buses.map((bus) => {
       const routeInfo = routeMap.get(bus.route);
+      const isEV = bus.busType ? bus.busType.toLowerCase().includes("electric") || bus.busType.toLowerCase().includes("ev") : false;
+      const departureTime = bus.departureTime || (bus.busNumber.includes("1001") ? "07:00 AM" : bus.busNumber.includes("1002") ? "11:30 AM" : bus.busNumber.includes("2001") ? "04:30 PM" : bus.busNumber.includes("3001") ? "06:15 AM" : bus.busNumber.includes("3002") ? "02:00 PM" : bus.busNumber.includes("4001") ? "08:00 PM" : "08:30 AM");
+      const durationHours = routeInfo?.estimatedTime ? `${Math.floor(routeInfo.estimatedTime / 60)}h ${routeInfo.estimatedTime % 60}m` : "2h 30m";
+
       return {
         _id: bus._id,
         busNumber: bus.busNumber,
-        busName: bus.busName,
+        busName: bus.busName || bus.route,
         busType: bus.busType,
+        isEV,
         driver: bus.driver,
         routeName: bus.route,
         capacity: bus.capacity,
         fare: bus.fare,
         source: routeInfo?.source || "Main Terminal",
         destination: routeInfo?.destination || "City Center",
+        departureTime,
+        duration: durationHours,
         stops: routeInfo?.stops || [],
         distance: routeInfo?.distance || 0,
         estimatedTime: routeInfo?.estimatedTime || 0,
+        statusBadge: "On Schedule",
       };
     });
 

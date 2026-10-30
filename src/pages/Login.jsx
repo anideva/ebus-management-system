@@ -1,6 +1,11 @@
 import { useState, useEffect } from "react";
 import { auth, googleProvider } from "../firebase";
-import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
+  signInWithPopup,
+} from "firebase/auth";
 import { useNavigate, Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
@@ -36,34 +41,49 @@ function Login() {
     setAuthSuccess("");
   };
 
-  // Autofill demo credentials for instant live presentations
-  const handleAutofillDemo = () => {
-    setAuthError("");
-    if (activeTab === "passenger") {
-      setEmail("passenger.demo@ebus.com");
-      setPassword("password123");
-      setAuthSuccess("Autofilled Demo Passenger credentials. Click Sign In below!");
-    } else {
-      setEmail("admin.demo@ebus.com");
-      setPassword("password123");
-      setAuthSuccess("Autofilled Demo Admin credentials. Click Sign In below!");
-    }
-  };
-
-  // HANDLE USER EMAIL/PASSWORD LOGIN
-  const handleLogin = async (e) => {
-    if (e) e.preventDefault();
-    setAuthError("");
-    setAuthSuccess("");
-
-    if (!email.trim() || !password.trim()) {
-      setAuthError("Please enter both email and password.");
-      return;
-    }
+  // Robust login executor: signs in existing accounts and auto-provisions demo accounts on the fly
+  const executeLogin = async (targetEmail, targetPassword, targetRole) => {
+    const cleanEmail = targetEmail.trim();
+    const isDemoAccount =
+      cleanEmail === "passenger.demo@ebus.com" ||
+      cleanEmail === "admin.demo@ebus.com";
 
     try {
       setLoading(true);
-      await signInWithEmailAndPassword(auth, email.trim(), password);
+      setAuthError("");
+      setAuthSuccess("");
+
+      // 1. Attempt standard Firebase sign-in
+      try {
+        await signInWithEmailAndPassword(auth, cleanEmail, targetPassword);
+      } catch (signInErr) {
+        // 2. If it's a demo account and doesn't exist in Firebase yet, auto-register it seamlessly!
+        if (
+          isDemoAccount &&
+          (signInErr.code === "auth/invalid-credential" ||
+            signInErr.code === "auth/user-not-found" ||
+            signInErr.code === "auth/wrong-password")
+        ) {
+          try {
+            const cred = await createUserWithEmailAndPassword(
+              auth,
+              cleanEmail,
+              targetPassword
+            );
+            await updateProfile(cred.user, {
+              displayName: targetRole === "admin" ? "Transport Admin" : "Demo Passenger",
+            });
+          } catch (createErr) {
+            if (createErr.code !== "auth/email-already-in-use") {
+              throw createErr;
+            }
+            throw signInErr;
+          }
+        } else {
+          throw signInErr;
+        }
+      }
+
       const userRole = await refreshRole();
       navigate(userRole === "admin" ? "/dashboard" : "/passenger/book");
     } catch (error) {
@@ -73,15 +93,36 @@ function Login() {
         error.code === "auth/user-not-found" ||
         error.code === "auth/wrong-password"
       ) {
-        setAuthError(
-          "Invalid email or password. If this demo account is not registered in your Firebase project yet, click 'Register' below to create it."
-        );
+        setAuthError("Invalid email or password. Please verify your credentials.");
       } else {
         setAuthError(error.message || "Failed to sign in. Please try again.");
       }
     } finally {
       setLoading(false);
     }
+  };
+
+  // HANDLE USER EMAIL/PASSWORD LOGIN FORM
+  const handleLogin = async (e) => {
+    if (e) e.preventDefault();
+
+    if (!email.trim() || !password.trim()) {
+      setAuthError("Please enter both email and password.");
+      return;
+    }
+
+    await executeLogin(email, password, activeTab);
+  };
+
+  // ONE-CLICK INSTANT DEMO LOGIN (Zero-Friction Access)
+  const handleInstantDemoLogin = async () => {
+    const demoEmail =
+      activeTab === "passenger" ? "passenger.demo@ebus.com" : "admin.demo@ebus.com";
+    const demoPass = "password123";
+
+    setEmail(demoEmail);
+    setPassword(demoPass);
+    await executeLogin(demoEmail, demoPass, activeTab);
   };
 
   // HANDLE GOOGLE SIGN-IN
@@ -148,15 +189,13 @@ function Login() {
         <div className="auth-header">
           <div className="auth-brand">
             <span className="auth-brand-icon">🚍</span>
-            <span>E-Bus Transit</span>
+            <span className="auth-brand-text">E-BUS TRANSIT</span>
           </div>
-          <h2 className="auth-title">
-            {activeTab === "passenger" ? "Passenger & Student Portal" : "Transport Admin Console"}
-          </h2>
+          <h2 className="auth-title">Welcome Back</h2>
           <p className="auth-subtitle">
             {activeTab === "passenger"
-              ? "Book transit tickets, choose seats & manage commuter passes"
-              : "Fleet operations, route management & revenue tracking"}
+              ? "Sign in to book tickets, choose seats & manage passes"
+              : "Sign in to manage fleet operations, routes & revenue"}
           </p>
         </div>
 
@@ -169,7 +208,7 @@ function Login() {
             className={`role-tab ${activeTab === "passenger" ? "active" : ""}`}
             onClick={() => handleTabSwitch("passenger")}
           >
-            <span className="role-tab-icon">👤</span>
+            <span>👤</span>
             <span>Passenger / Student</span>
           </button>
           <button
@@ -179,19 +218,9 @@ function Login() {
             className={`role-tab ${activeTab === "admin" ? "active" : ""}`}
             onClick={() => handleTabSwitch("admin")}
           >
-            <span className="role-tab-icon">🛡️</span>
+            <span>🛡️</span>
             <span>Transport Admin</span>
           </button>
-        </div>
-
-        {/* ROLE INFO BANNER */}
-        <div className="role-info-banner">
-          <span>{activeTab === "passenger" ? "🎫" : "⚙️"}</span>
-          <span>
-            {activeTab === "passenger"
-              ? "Commuter Portal: Search active routes, pick visual bus seats, and apply for student passes."
-              : "Administrative Console: Manage bus fleet, design transit routes with stops, and review finances."}
-          </span>
         </div>
 
         {/* NOTIFICATIONS */}
@@ -252,36 +281,33 @@ function Login() {
               ? "Sign In as Passenger"
               : "Sign In as Admin"}
           </button>
-        </form>
 
-        {/* QUICK DEMO CREDENTIALS BOX */}
-        <div className="quick-demo-card">
-          <div className="quick-demo-top">
-            <span className="quick-demo-badge">Presentation Mode</span>
-            <span className="quick-demo-hint">One-click showcase</span>
-          </div>
+          {/* ONE-CLICK DEMO LOGIN (INSTANT ACCESS) */}
           <button
             type="button"
-            className="quick-demo-action"
-            onClick={handleAutofillDemo}
-            title={`Fill ${activeTab === "passenger" ? "Passenger" : "Admin"} sample credentials`}
+            className="demo-instant-btn"
+            onClick={handleInstantDemoLogin}
+            disabled={loading}
+            title="Log in immediately using demo credentials"
           >
             <span>⚡</span>
             <span>
-              Autofill Demo {activeTab === "passenger" ? "Passenger" : "Admin"} Account
+              {loading
+                ? "Connecting..."
+                : `Instant Demo Access (${activeTab === "passenger" ? "Passenger" : "Admin"})`}
             </span>
           </button>
-        </div>
+        </form>
 
         {/* DIVIDER */}
-        <div className="divider">
-          <span>OR</span>
+        <div className="auth-divider">
+          <span>OR CONTINUE WITH</span>
         </div>
 
-        {/* GOOGLE SIGN IN */}
+        {/* FULL-WIDTH CENTERED GOOGLE SIGN IN */}
         <button
           type="button"
-          className="google-btn"
+          className="auth-google-btn"
           onClick={handleGoogleLogin}
           disabled={loading}
         >
@@ -309,7 +335,7 @@ function Login() {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
             />
           </svg>
-          Sign in with Google
+          <span>Sign in with Google</span>
         </button>
 
         {/* REGISTER FOOTER */}

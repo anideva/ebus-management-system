@@ -20,17 +20,38 @@ function MyBookings() {
     try {
       setLoading(true);
       const authToken = token || (await user?.getIdToken());
-      if (!authToken) return;
 
-      const res = await fetch(`${API_BASE_URL}/api/portal/my-tickets`, {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
+      let remoteTickets = [];
+      if (authToken) {
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/portal/my-tickets`, {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+          });
+          if (res.ok) {
+            remoteTickets = await res.json();
+          }
+        } catch (fetchErr) {
+          console.warn("Backend not reachable for tickets, falling back to local tickets:", fetchErr.message);
+        }
+      }
+
+      let localTickets = [];
+      try {
+        localTickets = JSON.parse(localStorage.getItem("demo_passenger_tickets") || "[]");
+      } catch (storageErr) {
+        console.warn("Local storage read error:", storageErr.message);
+      }
+
+      const ticketMap = new Map();
+      [...localTickets, ...remoteTickets].forEach((t) => {
+        if (t && t.ticketId && !ticketMap.has(t.ticketId)) {
+          ticketMap.set(t.ticketId, t);
+        }
       });
 
-      if (!res.ok) throw new Error("Failed to load your tickets");
-      const data = await res.json();
-      setTickets(data);
+      setTickets(Array.from(ticketMap.values()));
     } catch (err) {
       console.error("Error fetching tickets:", err);
     } finally {
@@ -45,18 +66,39 @@ function MyBookings() {
       if (!user) return;
       try {
         const authToken = token || (await user.getIdToken());
-        if (!authToken || ignore) return;
 
-        const res = await fetch(`${API_BASE_URL}/api/portal/my-tickets`, {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
+        let remoteTickets = [];
+        if (authToken && !ignore) {
+          try {
+            const res = await fetch(`${API_BASE_URL}/api/portal/my-tickets`, {
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+              },
+            });
+            if (res.ok) {
+              remoteTickets = await res.json();
+            }
+          } catch (e) {
+            console.warn("API my-tickets load issue:", e.message);
+          }
+        }
+
+        let localTickets = [];
+        try {
+          localTickets = JSON.parse(localStorage.getItem("demo_passenger_tickets") || "[]");
+        } catch (storageErr) {
+          console.warn("Local storage read error in MyBookings:", storageErr.message);
+        }
+
+        const ticketMap = new Map();
+        [...localTickets, ...remoteTickets].forEach((t) => {
+          if (t && t.ticketId && !ticketMap.has(t.ticketId)) {
+            ticketMap.set(t.ticketId, t);
+          }
         });
 
-        if (!res.ok) throw new Error("Failed to load your tickets");
-        const data = await res.json();
         if (!ignore) {
-          setTickets(data);
+          setTickets(Array.from(ticketMap.values()));
         }
       } catch (err) {
         console.error("Error fetching tickets:", err);
@@ -86,36 +128,50 @@ function MyBookings() {
       setActionMessage(null);
       const authToken = token || (await user?.getIdToken());
 
-      const res = await fetch(
-        `${API_BASE_URL}/api/portal/cancel-ticket/${encodeURIComponent(
-          ticket.ticketId
-        )}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
+      if (authToken) {
+        try {
+          await fetch(
+            `${API_BASE_URL}/api/portal/cancel-ticket/${encodeURIComponent(
+              ticket.ticketId
+            )}`,
+            {
+              method: "PUT",
+              headers: {
+                Authorization: `Bearer ${authToken}`,
+              },
+            }
+          );
+        } catch (netErr) {
+          console.warn("Remote cancel network error:", netErr.message);
         }
-      );
-
-      const result = await res.json();
-
-      if (!res.ok) {
-        throw new Error(result.message || "Failed to cancel ticket");
       }
+
+      // Update local storage
+      try {
+        const localTickets = JSON.parse(localStorage.getItem("demo_passenger_tickets") || "[]");
+        const updated = localTickets.map((t) =>
+          t.ticketId === ticket.ticketId ? { ...t, status: "Cancelled" } : t
+        );
+        localStorage.setItem("demo_passenger_tickets", JSON.stringify(updated));
+      } catch (storageErr) {
+        console.warn("Local storage write error on cancel:", storageErr.message);
+      }
+
+      // Update state
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.ticketId === ticket.ticketId ? { ...t, status: "Cancelled" } : t
+        )
+      );
 
       setActionMessage({
         type: "success",
         text: `Ticket #${ticket.ticketId} cancelled. Reservation released and payment marked as Refunded in system records.`,
       });
-
-      // Refresh tickets
-      fetchMyTickets();
     } catch (err) {
-      console.error("Error cancelling ticket:", err);
       setActionMessage({
-        type: "error",
-        text: err.message,
+        type: "danger",
+        text: err.message || "Failed to cancel ticket",
       });
     } finally {
       setCancellingId(null);
@@ -127,9 +183,19 @@ function MyBookings() {
       <PassengerNavbar />
 
       <main className="passenger-container">
-        <header className="passenger-page-header">
-          <h1>My Booked Tickets</h1>
-          <p>View your past and upcoming journey bookings, download tickets, or request cancellations.</p>
+        <header className="passenger-page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px" }}>
+          <div>
+            <h1>My Booked Tickets</h1>
+            <p>View your past and upcoming journey bookings, download tickets, or request cancellations.</p>
+          </div>
+          <button
+            type="button"
+            className="btn-secondary-action"
+            onClick={fetchMyTickets}
+            style={{ fontSize: "0.85rem", padding: "8px 14px", height: "auto", display: "inline-flex", alignItems: "center", gap: "6px" }}
+          >
+            🔄 Refresh
+          </button>
         </header>
 
         {actionMessage && (

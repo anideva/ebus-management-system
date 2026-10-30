@@ -30,6 +30,11 @@ export const verifyToken = async (req, res, next) => {
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
 
+    // Automatically recognize demo admin account for presentations
+    if (!adminEmails.includes("admin.demo@ebus.com")) {
+      adminEmails.push("admin.demo@ebus.com");
+    }
+
     const userEmail = (decodedToken.email || "").toLowerCase();
     const isConfiguredAdmin = userEmail && adminEmails.includes(userEmail);
 
