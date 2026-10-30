@@ -632,3 +632,277 @@
     justify-content: space-between;
   }
 }
+
+/* ========================================================
+   BOARDING PASS / PDF TICKET STYLES
+   ======================================================== */
+.boarding-pass-print-area {
+  padding: 20px;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.boarding-pass-card {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-surface);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+
+.boarding-pass-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--bg-surface-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.boarding-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.boarding-logo {
+  font-size: 2rem;
+}
+
+.boarding-agency-name {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--text-primary);
+}
+
+.boarding-pass-type {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.boarding-status-pill {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background-color: var(--success-light);
+  color: var(--success);
+  border: 1px solid rgba(22, 163, 74, 0.2);
+}
+
+.boarding-route-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #1e40af, #2563eb);
+  color: #ffffff;
+}
+
+.boarding-route-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.boarding-ticket-code {
+  font-family: monospace;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.boarding-details-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px 14px;
+  padding: 20px;
+}
+
+@media (max-width: 580px) {
+  .boarding-details-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.boarding-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.boarding-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.boarding-value {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.boarding-value-highlight {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+/* PERFORATED TEAR-OFF LINE */
+.boarding-tear-line {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin: 4px 0;
+  height: 20px;
+}
+
+.tear-dashes {
+  flex: 1;
+  border-top: 2px dashed var(--border-color);
+  margin: 0 16px;
+}
+
+.tear-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-color);
+  position: absolute;
+}
+
+.tear-circle.left {
+  left: -10px;
+}
+
+.tear-circle.right {
+  right: -10px;
+}
+
+/* STUB FOOTER */
+.boarding-stub-footer {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 20px;
+  background: var(--bg-surface-secondary);
+}
+
+@media (max-width: 580px) {
+  .boarding-stub-footer {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+.boarding-qr-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #ffffff;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.boarding-qr-image {
+  width: 120px;
+  height: 120px;
+  display: block;
+}
+
+.boarding-qr-caption {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #475569;
+  margin-top: 4px;
+}
+
+.boarding-instructions {
+  flex: 1;
+}
+
+.boarding-instructions h4 {
+  margin: 0 0 6px 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.boarding-instructions ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.boarding-barcode-graphic {
+  font-family: monospace;
+  font-size: 1.1rem;
+  letter-spacing: 2px;
+  margin-top: 10px;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+/* ========================================================
+   PRINT STYLES (SAVE AS PDF)
+   ======================================================== */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .boarding-pass-print-area,
+  .boarding-pass-print-area * {
+    visibility: visible;
+  }
+
+  .boarding-pass-print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .boarding-pass-card {
+    border: 2px solid #000000 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .boarding-route-bar {
+    background: #1e3a8a !important;
+    color: #ffffff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .boarding-header,
+  .boarding-stub-footer {
+    background: #f8fafc !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}

@@ -1,0 +1,287 @@
+/* ========================================================
+   AUTH PAGES STYLES (Login & Register)
+   Theme-aware styles supporting Light & Dark mode
+   ======================================================== */
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 32px 16px;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  font-family: 'Poppins', sans-serif;
+  position: relative;
+}
+
+.auth-theme-toggle {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1));
+  padding: 32px 28px;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.auth-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+}
+
+.auth-brand-icon {
+  font-size: 1.6rem;
+}
+
+.auth-title {
+  margin: 0 0 6px 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.auth-subtitle {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* ========================================================
+   ROLE SELECTOR TABS
+   ======================================================== */
+.role-tabs {
+  display: flex;
+  background-color: var(--bg-surface-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 20px;
+  gap: 4px;
+}
+
+.role-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.role-tab:hover {
+  color: var(--text-primary);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.role-tab.active {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  font-weight: 600;
+  border-color: var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.role-tab-icon {
+  font-size: 1rem;
+}
+
+/* ROLE INFO BANNER */
+.role-info-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: var(--primary-light, #eff6ff);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  border-radius: 8px;
+  margin-bottom: 18px;
+  font-size: 0.78rem;
+  color: var(--primary, #2563eb);
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+[data-theme="dark"] .role-info-banner {
+  background-color: rgba(37, 99, 235, 0.12);
+  border-color: rgba(37, 99, 235, 0.3);
+  color: #93c5fd;
+}
+
+/* ========================================================
+   ALERT MESSAGES
+   ======================================================== */
+.auth-alert {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  margin-bottom: 16px;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.auth-alert-error {
+  background-color: var(--danger-light, #fef2f2);
+  color: var(--danger, #dc2626);
+  border: 1px solid rgba(220, 38, 38, 0.25);
+}
+
+.auth-alert-success {
+  background-color: var(--success-light, #f0fdf4);
+  color: var(--success, #16a34a);
+  border: 1px solid rgba(22, 163, 74, 0.25);
+}
+
+/* ========================================================
+   FORM INPUTS & BUTTONS
+   ======================================================== */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-input-group {
+  text-align: left;
+}
+
+.auth-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.auth-submit-btn {
+  width: 100%;
+  padding: 11px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  border-radius: 8px;
+  background-color: var(--primary);
+  color: var(--primary-text);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  margin-top: 4px;
+}
+
+.auth-submit-btn:hover {
+  background-color: var(--primary-hover);
+}
+
+.auth-submit-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* ========================================================
+   QUICK DEMO BOX
+   ======================================================== */
+.quick-demo-card {
+  margin-top: 18px;
+  padding: 12px 14px;
+  background-color: var(--bg-surface-secondary);
+  border: 1px dashed var(--border-color);
+  border-radius: 10px;
+  text-align: left;
+}
+
+.quick-demo-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.quick-demo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background-color: var(--primary);
+  color: var(--primary-text);
+}
+
+.quick-demo-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.quick-demo-action {
+  width: 100%;
+  padding: 8px 12px;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.quick-demo-action:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* ========================================================
+   FOOTER LINKS
+   ======================================================== */
+.auth-footer {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+}
+
+.auth-footer a {
+  color: var(--primary);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.auth-footer a:hover {
+  text-decoration: underline;
+}

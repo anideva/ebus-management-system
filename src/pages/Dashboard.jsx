@@ -30,6 +30,8 @@ function Dashboard() {
   const [totalTickets, setTotalTickets] = useState(0);
 
   const [authLoading, setAuthLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
+  const [seedMessage, setSeedMessage] = useState("");
 
   // ===========================
   // FETCH DASHBOARD DATA
@@ -197,6 +199,41 @@ function Dashboard() {
   };
 
   // ===========================
+  // SEED DEMO TRANSIT DATA
+  // ===========================
+  const handleSeedDemoData = async () => {
+    try {
+      setSeeding(true);
+      setSeedMessage("");
+      const user = auth.currentUser;
+      if (!user) return;
+      const token = await user.getIdToken();
+
+      const res = await fetch(`${API_BASE_URL}/api/dashboard/seed-demo`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to load demo data");
+      }
+
+      setSeedMessage(
+        "✓ Demo transit network loaded! 5 routes, 6 buses with assigned drivers, and active student passes ready."
+      );
+      await fetchDashboardData(token);
+    } catch (err) {
+      console.error("Error seeding demo data:", err);
+      setSeedMessage("⚠️ Failed to load demo data. Please verify backend connection.");
+    } finally {
+      setSeeding(false);
+    }
+  };
+
+  // ===========================
   // LOADING SCREEN
   // ===========================
   if (authLoading) {
@@ -252,6 +289,30 @@ function Dashboard() {
             </form>
           </div>
         )}
+
+        {/* ====================================================
+            ONE-CLICK DEMO TRANSIT NETWORK SEEDER
+        ==================================================== */}
+        <div className="demo-seed-card">
+          <div className="demo-seed-info">
+            <div className="demo-seed-icon">🚀</div>
+            <div>
+              <h3>Demo & Presentation Mode</h3>
+              <p>
+                {seedMessage ||
+                  "Instantly preload 5 Assam transit corridors, 6 buses with assigned drivers, and active student passes for your presentation."}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="demo-seed-btn"
+            onClick={handleSeedDemoData}
+            disabled={seeding}
+          >
+            {seeding ? "Populating Fleet..." : "⚡ Load Demo Fleet & Routes"}
+          </button>
+        </div>
 
         {/* ===========================
             DASHBOARD STAT CARDS

@@ -2,6 +2,7 @@ import express from "express";
 
 import {
   getRecentActivity,
+  seedDemoData,
 } from "../controllers/dashboardController.js";
 
 import { verifyToken, requireRole } from "../middleware/authMiddleware.js";
@@ -17,6 +18,14 @@ router.use(verifyToken, requireRole(["admin"]));
 router.get(
   "/recent-activity",
   getRecentActivity
+);
+
+// ===========================
+// POST SEED DEMO TRANSIT DATA
+// ===========================
+router.post(
+  "/seed-demo",
+  seedDemoData
 );
 
 export default router;

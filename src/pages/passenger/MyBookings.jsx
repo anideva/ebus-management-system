@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import PassengerNavbar from "../../components/PassengerNavbar";
+import TicketModal from "../../components/TicketModal";
 import { useAuth } from "../../context/AuthContext";
 import { API_BASE_URL } from "../../config/api";
 import "../../styles/passenger.css";
@@ -12,6 +13,7 @@ function MyBookings() {
   const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState(null);
   const [actionMessage, setActionMessage] = useState(null);
+  const [activeViewingTicket, setActiveViewingTicket] = useState(null);
 
   // FETCH TICKETS
   const fetchMyTickets = useCallback(async () => {
@@ -240,26 +242,41 @@ function MyBookings() {
                       </div>
                     </div>
 
-                    {isBooked && (
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
                       <button
                         type="button"
-                        disabled={cancellingId === ticket.ticketId}
-                        onClick={() => handleCancelTicket(ticket)}
+                        onClick={() => setActiveViewingTicket(ticket)}
+                        className="btn-primary-action"
                         style={{
-                          backgroundColor: "transparent",
-                          color: "var(--danger)",
-                          border: "1px solid var(--danger)",
-                          padding: "6px 14px",
-                          borderRadius: "6px",
+                          padding: "6px 12px",
                           fontSize: "0.82rem",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          transition: "all 0.2s",
+                          gap: "6px",
                         }}
                       >
-                        {cancellingId === ticket.ticketId ? "Cancelling..." : "Cancel Ticket"}
+                        🎫 View / Print Pass
                       </button>
-                    )}
+
+                      {isBooked && (
+                        <button
+                          type="button"
+                          disabled={cancellingId === ticket.ticketId}
+                          onClick={() => handleCancelTicket(ticket)}
+                          style={{
+                            backgroundColor: "transparent",
+                            color: "var(--danger)",
+                            border: "1px solid var(--danger)",
+                            padding: "6px 12px",
+                            borderRadius: "6px",
+                            fontSize: "0.82rem",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            transition: "all 0.2s",
+                          }}
+                        >
+                          {cancellingId === ticket.ticketId ? "Cancelling..." : "Cancel"}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -267,6 +284,14 @@ function MyBookings() {
           </div>
         )}
       </main>
+
+      {/* PRINTABLE BOARDING PASS / PDF TICKET MODAL */}
+      {activeViewingTicket && (
+        <TicketModal
+          ticket={activeViewingTicket}
+          onClose={() => setActiveViewingTicket(null)}
+        />
+      )}
     </div>
   );
 }

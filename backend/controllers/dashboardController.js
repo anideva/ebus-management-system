@@ -5,6 +5,7 @@ import Route from "../models/route.js";
 import Ticket from "../models/ticket.js";
 import Pass from "../models/pass.js";
 import Payment from "../models/payment.js";
+import { seedDemoDataService } from "../utils/demoData.js";
 
 export const getRecentActivity = async (req, res) => {
   try {
@@ -71,6 +72,27 @@ export const getRecentActivity = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Failed to fetch recent activity",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * POST /api/dashboard/seed-demo
+ * Populates or updates the database with a realistic Assam transit dataset.
+ * Requires admin authentication.
+ */
+export const seedDemoData = async (req, res) => {
+  try {
+    const result = await seedDemoDataService();
+    res.status(200).json({
+      message: "Demo transit network populated successfully",
+      result,
+    });
+  } catch (error) {
+    console.error("Error seeding demo data:", error);
+    res.status(500).json({
+      message: "Failed to seed demo data",
       error: error.message,
     });
   }

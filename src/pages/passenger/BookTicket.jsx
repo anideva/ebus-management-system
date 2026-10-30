@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import PassengerNavbar from "../../components/PassengerNavbar";
+import TicketModal from "../../components/TicketModal";
 import { useAuth } from "../../context/AuthContext";
 import { API_BASE_URL } from "../../config/api";
 import "../../styles/passenger.css";
@@ -29,6 +30,7 @@ function BookTicket() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(null);
   const [bookingError, setBookingError] = useState("");
+  const [showBoardingPass, setShowBoardingPass] = useState(false);
 
   // FETCH SERVICES
   const fetchServices = useCallback(async () => {
@@ -179,6 +181,7 @@ function BookTicket() {
     setSelectedSeat(null);
     setBookingSuccess(null);
     setBookingError("");
+    setShowBoardingPass(false);
   };
 
   return (
@@ -390,9 +393,21 @@ function BookTicket() {
                   </div>
                 </div>
 
-                <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
-                  <Link to="/passenger/bookings" className="btn-primary-action">
-                    View My Bookings
+                <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    className="btn-primary-action"
+                    onClick={() => setShowBoardingPass(true)}
+                    style={{ gap: "6px" }}
+                  >
+                    🎫 View & Print Boarding Pass
+                  </button>
+                  <Link
+                    to="/passenger/bookings"
+                    className="btn-secondary-action"
+                    style={{ textDecoration: "none" }}
+                  >
+                    My Bookings
                   </Link>
                   <button
                     type="button"
@@ -549,6 +564,18 @@ function BookTicket() {
             )}
           </div>
         </div>
+      )}
+
+      {/* PRINTABLE BOARDING PASS / PDF TICKET MODAL */}
+      {showBoardingPass && bookingSuccess?.ticket && (
+        <TicketModal
+          ticket={{
+            ...bookingSuccess.ticket,
+            routeName: selectedBus?.routeName || bookingSuccess.ticket.routeName,
+            paymentMethod: paymentMethod,
+          }}
+          onClose={() => setShowBoardingPass(false)}
+        />
       )}
     </div>
   );
