@@ -1,103 +1,125 @@
 # 🚍 E-Bus Management System
 
-A full-stack web application designed for transit operators, educational institutions, and fleet managers to coordinate fleet operations, bus routes, driver schedules, student transit allocations, ticket bookings, student passes, and fare payments from a single unified interface.
+A full-stack, enterprise-grade transit management web application designed for regional transit operators, educational institutions, and daily commuters. The system centralizes fleet operations, multi-stop transit routes, commercial driver allocations, student transit passes, passenger seat bookings, and revenue tracking into a single, responsive portal.
+
+[![Frontend Deployment](https://img.shields.io/badge/Frontend-Netlify-00C7B7?logo=netlify&logoColor=white)](https://ebus-management-system.netlify.app/)
+[![Backend Deployment](https://img.shields.io/badge/Backend-Render-46E3B7?logo=render&logoColor=white)](https://ebus-management-system.onrender.com)
+[![API Health](https://img.shields.io/badge/Health%20Check-Active-success)](https://ebus-management-system.onrender.com/health)
+[![Test Suite](https://img.shields.io/badge/Tests-37%20Passed-brightgreen)](backend/test/audit_and_rbac.test.js)
 
 ---
 
 ## 📖 Table of Contents
 
 1. [Overview & Problem Solved](#-overview--problem-solved)
-2. [Key Features & Modules](#-key-features--modules)
-3. [Technology Stack](#-technology-stack)
-4. [System Architecture](#-system-architecture)
-5. [Request & Authentication Flow](#-request--authentication-flow)
-6. [Repository Structure](#-repository-structure)
-7. [Prerequisites](#-prerequisites)
-8. [Step-by-Step Installation & Setup](#-step-by-step-installation--setup)
-9. [Environment Variable Configuration](#-environment-variable-configuration)
-10. [Running the Application Locally](#-running-the-application-locally)
-11. [REST API Endpoint Reference](#-rest-api-endpoint-reference)
-12. [Database Models & Schema](#-database-models--schema)
-13. [Authentication & Security Practices](#-authentication--security-practices)
-14. [Testing & Quality Verification](#-testing--quality-verification)
-15. [Troubleshooting & FAQs](#-troubleshooting--faqs)
-16. [Current Limitations & Roadmap](#-current-limitations--roadmap)
-17. [Contributing](#-contributing)
-18. [License](#-license)
+2. [User Personas & Role Matrix](#-user-personas--role-matrix)
+3. [Key Features & Highlights](#-key-features--highlights)
+4. [Role-Tabbed Login & Presentation Mode](#-role-tabbed-login--presentation-mode)
+5. [Technology Stack](#-technology-stack)
+6. [System Architecture](#-system-architecture)
+7. [Repository Structure](#-repository-structure)
+8. [Step-by-Step Local Setup Guide](#-step-by-step-local-setup-guide)
+9. [Preloading Demo Data (One-Click Seeder)](#-preloading-demo-data-one-click-seeder)
+10. [REST API Endpoint Reference](#-rest-api-endpoint-reference)
+11. [Security Hardening & Data Integrity](#-security-hardening--data-integrity)
+12. [Testing & Quality Verification](#-testing--quality-verification)
+13. [License](#-license)
 
 ---
 
 ## 🎯 Overview & Problem Solved
 
-Managing bus transit networks often involves fragmented records: paper logbooks for drivers, spreadsheets for bus maintenance, disparate booking slips for passengers, and separate systems for student passes. 
+Managing bus transit networks often relies on disjointed tools: paper logbooks for drivers, spreadsheets for bus maintenance, disparate physical slips for passenger ticketing, and separate offices for student bus passes.
 
-The **E-Bus Management System** solves this by centralizing transit logistics into an authenticated, real-time management portal. Administrators can:
-* Prevent double-booking with real-time seat availability checks.
-* Link routes, drivers, and buses without duplicating manual records.
-* Manage student bus passes and transit assignments.
-* Track payment statuses and revenue totals dynamically.
-* Monitor operational events in a real-time activity feed.
+The **E-Bus Management System** unifies these operations into an authenticated, real-time portal:
+* **For Operators:** Eliminates data silos by linking buses, routes, intermediate stops, drivers, and revenue in one dashboard.
+* **For Passengers:** Provides an airline-style booking flow with interactive seat selection, instant QR boarding passes, and flexible cancellation.
+* **For Institutions:** Streamlines student transit enrollment and digital bus pass management.
 
 ---
 
-## ✨ Key Features & Modules
+## 👥 User Personas & Role Matrix
 
-### 1. 🔐 Authentication & Access Control
-* Dual sign-in options: Email/Password login and Google Single Sign-On (SSO) via Firebase popup.
-* User session persistence and token refresh handled automatically.
-* Automatic route protection with redirection to `/login` for unauthenticated sessions.
+The platform is designed around two distinct user categories protected by server-side Role-Based Access Control (RBAC):
 
-### 2. 📊 Centralized Dashboard
-* Aggregate KPI cards: Total Buses, Active Routes, Registered Students, Active Passes, Total Revenue (calculated from paid transactions), and Total Tickets.
-* Live Recent Activity timeline auditing the latest actions across all system modules.
+| Dimension | 🛡️ Transport Administrator | 👤 Passenger / Student Commuter |
+|---|---|---|
+| **Target User** | Transit Authority, Depot Manager, Fleet Operator | Daily commuter, college student, general public |
+| **Primary Goal** | Fleet logistics, route planning, revenue oversight | Transit search, seat reservation, pass applications |
+| **Core Capabilities** | • Create & edit buses, capacities, and base fares<br>• Define routes with intermediate pickup stops<br>• Assign commercial drivers with verified licenses<br>• Approve and manage student transit passes<br>• Review system-wide revenue & audit activity logs | • Search buses by origin, destination & date<br>• View intermediate route stops & travel times<br>• Select seats visually via live seating layout<br>• Download/Print digital boarding pass with QR code<br>• Apply for subsidized student bus passes<br>• Cancel active bookings with instant seat release |
+| **Authorization** | Restricted to server-verified `ADMIN_EMAILS` | Assigned to all registered public users by default |
+| **Landing View** | `/dashboard` (Executive Fleet Analytics) | `/passenger/book` (Service Search & Booking) |
 
-### 2. 🚌 Bus Management
-* Add, edit, view, and delete fleet vehicles.
-* Configure vehicle number, name, seating capacity, fare rate, assigned driver, assigned route, and operational status (`Active` / `Maintenance`).
-* Client-side duplicate vehicle number prevention.
+---
 
-### 3. 🛣️ Route Management
-* Define transit paths with source, destination, intermediate stops, total distance (km), and estimated travel time (mins).
-* Manage status (`Active` / `Inactive`) and prevent duplicate route identifiers.
+## ✨ Key Features & Highlights
 
-### 4. 👨‍✈️ Driver Management
-* Manage driver profiles: Driver ID, full name, phone number, years of experience, unique commercial license number, assigned bus, and duty status (`Active` / `On Leave`).
+### 1. 🎫 Interactive Seat Booking & Instant Boarding Pass
+* **Visual Seating Grid:** Generates dynamic bus seat layouts based on vehicle capacity. Booked seats are locked in real-time.
+* **Double-Booking Prevention:** Backed by a MongoDB partial unique compound index (`{ busNumber, journeyDate, seatNumber }` where `status: "Booked"`), guaranteeing that concurrent booking attempts never assign the same seat.
+* **Official Boarding Pass:** Generates a printable digital pass with journey details, seat badge, perforated tear-off line, and a **scannable QR verification code**. Supports one-click **Save as PDF / Print**.
 
-### 5. 🎓 Student Management
-* Register students with student ID, name, grade/class, section, emergency contact number, assigned route, and bus.
-* Manage enrollment status (`Active` / `Inactive`).
+### 2. 🛣️ Multi-Stop Route Linking
+* **Intermediate Stop Matching:** Searching from intermediate stops (e.g., *Mangaldai* to *Guwahati*) automatically matches parent routes (*Kharupetia - Guwahati Express*).
+* **Dropdown Route Integrity:** Bus creation enforces selecting valid, active routes from a dropdown, preventing orphaned buses caused by manual typing errors.
 
-### 6. 🎟️ Ticket Booking & Seat Management
-* Issue bus tickets with passenger name, travel date, route, fare, and individual seat selection.
-* Dynamic seating grid generated from the assigned bus capacity.
-* Automated seat availability validation: already-booked seats are disabled and labeled for that specific bus and travel date.
+### 3. 🚌 Fleet & Driver Coordination
+* **Two-Stage Bus Deletion Protection:** Active buses cannot be deleted directly; operators must first transition them to `Maintenance`. Buses with active passenger tickets are protected against accidental deletion.
+* **Driver Records:** Tracks driver profiles, contact numbers, years of experience, and commercial license numbers linked directly to fleet vehicles.
 
-### 7. 🎫 Pass Management
-* Issue student transit passes: Monthly, Quarterly, or Yearly validity.
-* Track validity start and expiration dates with active status management.
+### 4. 🎓 Student Commuter Passes
+* Issues digital transit passes with Monthly, Quarterly, or Yearly validity.
+* Displays validity countdowns and active/expired status badges.
 
-### 8. 💳 Payment Management
-* Record passenger fare payments with transaction ID and payment methods (UPI, Debit Card, Credit Card, Net Banking, Cash).
-* Automated pre-fill: selecting a booked ticket automatically populates the passenger name and fare amount.
-* Track payment status (`Paid`, `Pending`, `Failed`, `Refunded`).
+### 5. 💳 Internal Accounting & Payment Tracking
+* Records fare transactions with simulated transaction IDs and payment channels (UPI, Card, Net Banking, Cash).
+* Ticket cancellations automatically release seat reservations and mark internal accounting records as `Refunded`.
+
+---
+
+## 🔑 Role-Tabbed Login & Presentation Mode
+
+To make demonstrations, viva presentations, and recruiter evaluations effortless, the authentication screen ([`src/pages/Login.jsx`](src/pages/Login.jsx)) includes a **Role Selector** and a **One-Click Presentation Mode**:
+
+```
+┌────────────────────────────────────────────────────────┐
+│               🚍 E-Bus Transit Portal                  │
+│                                                        │
+│     ┌───────────────────────┬───────────────────────┐  │
+│     │ 👤 Passenger / Student│  🛡️ Transport Admin   │  │
+│     └───────────────────────┴───────────────────────┘  │
+│                                                        │
+│   Email:    [ passenger.demo@ebus.com              ]   │
+│   Password: [ ••••••••••••                         ]   │
+│                                                        │
+│   [                 Sign In                        ]   │
+│                                                        │
+│   ── Presentation Mode ──────────────────────────────  │
+│   [ ⚡ Autofill Demo Passenger / Admin Account ]        │
+└────────────────────────────────────────────────────────┘
+```
+
+### Why This Is Included:
+* **Zero Fumbling in Demos:** Evaluators or interviewers do not need to register a new account or memorize passwords—clicking **"Autofill Demo Account"** populates test credentials with one click.
+* **True Role Separation:** Switching between the Passenger and Admin tabs illustrates the two sides of the system without requiring separate login URLs.
+* **Server-Enforced Security:** Client tab selection is purely presentation; the backend middleware cryptographically verifies user claims before granting administrative access.
 
 ---
 
 ## 🛠️ Technology Stack
 
-| Layer | Technology | Role & Purpose |
-|---|---|---|
-| **Frontend Framework** | **React.js (v19)** | Declarative component-based UI library that efficiently renders the user interface and updates state changes. |
-| **Build Tool** | **Vite (v8)** | High-speed frontend build tool providing Instant Server Start, Hot Module Replacement (HMR), and optimized production bundling. |
-| **Client Routing** | **React Router DOM (v7)** | Single Page Application (SPA) declarative client-side routing and protected route navigation. |
-| **Authentication (Client)** | **Firebase Authentication** | Manages user sign-up, sign-in, session persistence, and securely generates JSON Web Tokens (JWT ID Tokens). |
-| **Backend Runtime** | **Node.js (v20+)** | High-performance asynchronous JavaScript server runtime. |
-| **Backend Framework** | **Express.js (v5)** | Minimalist web framework for routing, middleware handling, and RESTful API endpoint definition. |
-| **Authentication (Server)** | **Firebase Admin SDK** | Cryptographically validates incoming Firebase Bearer ID tokens on every protected API endpoint. |
-| **Database** | **MongoDB Atlas** | Distributed NoSQL document database storing application data in structured collections. |
-| **Object Data Modeling (ODM)** | **Mongoose (v9)** | Schema-based data modeling layer providing strict types, validations, default values, and query abstraction. |
-| **CORS Middleware** | **cors** | Configures Cross-Origin Resource Sharing headers to permit authorized frontend-backend communication. |
-| **Environment Config** | **dotenv** | Loads environment variables from `.env` files into `process.env`. |
+| Layer | Technology | Version | Purpose in Application |
+|---|---|---|---|
+| **Frontend UI** | **React.js** | `^19.2.7` | Component-driven user interface with responsive dark/light theme switching. |
+| **Build Tool** | **Vite** | `^8.1.1` | Ultra-fast HMR development server and optimized production bundler. |
+| **Routing** | **React Router DOM** | `^7.18.1` | Single-Page-Application client-side routing with role-based protected guards. |
+| **Client Auth** | **Firebase SDK** | `^12.16.0` | Client-side user authentication, session persistence, and ID token (JWT) management. |
+| **Backend API** | **Express.js** | `^5.2.1` | RESTful API server handling transit routing, booking transactions, and RBAC. |
+| **Runtime** | **Node.js** | `v20+` | Asynchronous event-driven server runtime environment. |
+| **Server Auth** | **Firebase Admin SDK** | `^13.10.0` | Cryptographic signature validation of incoming Bearer tokens on protected routes. |
+| **Database** | **MongoDB Atlas** | `v7.0+` | Cloud-hosted NoSQL document database storing transit collections. |
+| **Data Modeling** | **Mongoose** | `^9.9.3` | Strict object data modeling, schema validations, and compound indexing. |
+| **Styling** | **Custom CSS3** | — | Theme-aware custom properties (`--bg-app`, `--primary`), zero heavy CSS framework bloat. |
 
 ---
 
@@ -105,513 +127,276 @@ The **E-Bus Management System** solves this by centralizing transit logistics in
 
 ```mermaid
 flowchart TD
-    subgraph Browser ["Client Application (Browser)"]
-        User["User Interface"]
-        Router["React Router DOM"]
-        AuthClient["Firebase Auth Client SDK"]
+    subgraph Client ["Client Layer (Browser / SPA on Netlify)"]
+        UI["React 19 UI (Passenger & Admin Views)"]
+        FClient["Firebase Client SDK (Auth)"]
     end
 
-    subgraph FirebaseCloud ["Firebase Cloud Identity"]
-        FServer["Firebase Authentication Servers"]
+    subgraph Identity ["Identity Provider"]
+        FAuth["Firebase Authentication (Google / Email)"]
     end
 
-    subgraph ExpressServer ["Backend Application (Node.js + Express)"]
-        Server["server.js (Port 5000 / Dynamic)"]
-        CorsMW["CORS & JSON Parsers"]
-        AuthMW["authMiddleware (verifyToken)"]
-        AdminSDK["Firebase Admin SDK"]
-        Controllers["Controllers (CRUD Logic)"]
-        Models["Mongoose Models & Schemas"]
+    subgraph Backend ["Backend API Layer (Express on Render)"]
+        Server["server.js (Dynamic Port)"]
+        VerifyMW["verifyToken Middleware"]
+        RoleMW["requireRole(['admin']) Guard"]
+        FAdmin["Firebase Admin SDK"]
+        Controllers["Controllers (Bus, Route, Ticket, Portal)"]
     end
 
-    subgraph DatabaseCloud ["Database (MongoDB Atlas)"]
-        MongoCollections[("Collections: buses, routes, drivers, students, tickets, passes, payments")]
+    subgraph Database ["Database Layer (MongoDB Atlas)"]
+        Atlas[("Collections: buses, routes, drivers, tickets, passes, users")]
     end
 
-    User -->|"1. Enter credentials"| AuthClient
-    AuthClient <-->|"2. Authenticate"| FServer
-    AuthClient -->|"3. Receive ID Token (JWT)"| User
-    User -->|"4. Navigate"| Router
-
-    User -->|"5. HTTP Request + Bearer Token"| Server
-    Server --> CorsMW
-    CorsMW --> AuthMW
-    AuthMW <-->|"6. Verify Signature"| AdminSDK
-    AdminSDK <-->|"Public Keys"| FServer
-
-    AuthMW -->|"7. Valid Token (req.user)"| Controllers
-    Controllers --> Models
-    Models <-->|"8. Queries / Updates"| MongoCollections
-    Controllers -->|"9. JSON Response"| User
+    UI -->|"1. User Login"| FClient
+    FClient <-->|"2. Credentials / JWT Token"| FAuth
+    UI -->|"3. HTTP Request + Bearer Token"| Server
+    Server --> VerifyMW
+    VerifyMW <-->|"4. Verify Token Signature"| FAdmin
+    VerifyMW --> RoleMW
+    RoleMW --> Controllers
+    Controllers <-->|"5. CRUD Queries & Partial Unique Indexes"| Atlas
+    Controllers -->|"6. JSON Response"| UI
 ```
-
----
-
-## 🔐 Request & Authentication Flow
-
-1. **User Sign In:** The user registers or signs in using their email and password through the React login form.
-2. **Token Generation:** Firebase Client SDK authenticates the user and returns a signed Firebase ID Token (JWT).
-3. **API Invocation:** When making API requests (e.g. creating a bus, booking a ticket), the frontend retrieves the token using `await user.getIdToken()` and attaches it to the HTTP request:
-   ```http
-   Authorization: Bearer <firebase-id-token>
-   ```
-4. **Token Verification:** The backend Express middleware ([`backend/middleware/authMiddleware.js`](backend/middleware/authMiddleware.js)) intercepts the request, extracts the Bearer token, and verifies it with the Firebase Admin SDK using `admin.auth().verifyIdToken(token)`.
-5. **Controller Execution:** If the token is valid, the decoded user payload is assigned to `req.user` and the request proceeds to the respective controller to query MongoDB. If invalid or missing, a `401 Unauthorized` response is returned immediately.
 
 ---
 
 ## 📁 Repository Structure
 
-```
+The project uses the standard **SPA Root with Embedded Backend** architecture: the frontend lives at the repository root for zero-config deployment on Netlify, while the backend API is isolated in `/backend`.
+
+```text
 ebus-project/
-├── .env.example                  # Template for frontend environment variables
-├── .gitignore                    # Git exclusion rules (protects credentials & node_modules)
-├── eslint.config.js              # ESLint configuration
-├── index.html                    # Single Page Application entrypoint
-├── netlify.toml                  # Netlify SPA redirect rules
-├── package.json                  # Frontend dependencies and scripts
-├── package-lock.json
-├── README.md                     # Project documentation
-├── vercel.json                   # Vercel SPA rewrite rules
+├── index.html                    # SPA HTML entry point
+├── package.json                  # Frontend dependencies (React 19, Vite, Firebase)
 ├── vite.config.js                # Vite build configuration
+├── netlify.toml / vercel.json    # Production SPA routing rewrite rules
 │
-├── public/                       # Static public assets
-│   └── vite.svg
+├── public/                       # Static public assets (icons, favicons)
 │
-├── src/                          # React Frontend Source
-│   ├── App.jsx                   # Route declarations
-│   ├── firebase.js               # Client Firebase SDK initialization
+├── src/                          # FRONTEND APPLICATION SOURCE
+│   ├── App.jsx                   # Client route declarations & guards
 │   ├── main.jsx                  # React DOM mount point
-│   ├── styles.css                # Base CSS
-│   │
-│   ├── config/
-│   │   └── api.js                # Central API Base URL provider (VITE_API_URL)
+│   ├── firebase.js               # Firebase Client SDK initialization
+│   ├── styles.css                # Global design system & theme variables
 │   │
 │   ├── components/               # Reusable UI Components
-│   │   ├── Navbar.jsx            # Top navbar with user email & logout
-│   │   ├── RecentActivity.jsx    # Real-time activity timeline
-│   │   ├── Sidebar.jsx           # Application navigation sidebar
-│   │   ├── StatCard.jsx          # Metric cards
-│   │   └── WelcomeSection.jsx    # Dashboard greeting
+│   │   ├── Navbar.jsx            # Admin top navigation bar
+│   │   ├── PassengerNavbar.jsx   # Passenger portal navigation bar
+│   │   ├── Sidebar.jsx           # Collapsible hover-to-expand admin navigation
+│   │   ├── StatCard.jsx          # Metric statistic cards
+│   │   ├── RecentActivity.jsx    # Live audit activity timeline
+│   │   └── TicketModal.jsx       # 🎫 Printable Boarding Pass & QR Modal
 │   │
-│   ├── pages/                    # Views / Modules
-│   │   ├── BusManagement.jsx     # Bus fleet operations
-│   │   ├── Dashboard.jsx         # Executive dashboard & metrics
-│   │   ├── DriverManagement.jsx  # Driver profiles & assignments
-│   │   ├── Login.jsx             # User login
-│   │   ├── PassManagement.jsx    # Student transit passes
-│   │   ├── PaymentManagement.jsx # Fare transaction tracking
-│   │   ├── Register.jsx          # New user registration
-│   │   ├── RouteManagement.jsx   # Route & stop management
-│   │   ├── StudentManagement.jsx # Student transit enrollment
-│   │   └── TicketManagement.jsx  # Ticketing & seat selection
+│   ├── context/                  # React Context Providers
+│   │   ├── AuthContext.jsx       # User identity & server role provider
+│   │   └── ThemeContext.jsx      # Dark / Light theme persistence
 │   │
-│   └── styles/                   # Modular CSS stylesheets
-│       ├── auth.css
-│       ├── busManagement.css
-│       ├── dashboard.css
-│       ├── navbar.css
-│       ├── recentActivity.css
-│       ├── sidebar.css
-│       ├── statcard.css
-│       └── welcome.css
+│   ├── pages/                    # Views & Feature Pages
+│   │   ├── Login.jsx             # 🔑 Role-tabbed login with quick-fill demo
+│   │   ├── Register.jsx          # Account registration
+│   │   ├── Dashboard.jsx         # Executive dashboard + One-click seeder banner
+│   │   ├── BusManagement.jsx     # Fleet CRUD with route dropdown selector
+│   │   ├── RouteManagement.jsx   # Route & intermediate stop builder
+│   │   ├── DriverManagement.jsx  # Driver profiles & bus assignments
+│   │   ├── StudentManagement.jsx # Student commuter registry
+│   │   ├── PassManagement.jsx    # Student transit pass management
+│   │   ├── PaymentManagement.jsx # Fare transaction records
+│   │   └── passenger/            # PASSENGER PORTAL MODULES
+│   │       ├── BookTicket.jsx    # Multi-stop search, seat grid & booking
+│   │       ├── MyBookings.jsx    # Booking history & boarding pass download
+│   │       └── MyPasses.jsx      # Pass application & active pass wallet
+│   │
+│   └── styles/                   # Scoped Component Stylesheets
+│       ├── auth.css              # Theme-aware login/register cards
+│       ├── dashboard.css         # Dashboard grid & presentation banner
+│       └── passenger.css         # Seating grid & print boarding pass styles
 │
-└── backend/                      # Node.js + Express API
-    ├── .env.example              # Template for backend environment variables
-    ├── package.json              # Backend dependencies and scripts
-    ├── package-lock.json
+└── backend/                      # BACKEND API APPLICATION (Node.js + Express)
     ├── server.js                 # Express server & MongoDB connection
-    │
-    ├── config/
-    │   └── firebaseAdmin.js      # Firebase Admin SDK initialization
-    │
-    ├── middleware/
-    │   └── authMiddleware.js     # verifyToken middleware
-    │
-    ├── models/                   # Mongoose Schemas & Models
-    │   ├── bus.js
-    │   ├── driver.js
-    │   ├── pass.js
-    │   ├── payment.js
-    │   ├── route.js
-    │   ├── student.js
-    │   └── ticket.js
-    │
-    ├── controllers/              # Controller business logic
-    │   ├── busController.js
-    │   ├── dashboardController.js
-    │   ├── driverController.js
-    │   ├── passController.js
-    │   ├── paymentController.js
-    │   ├── routeController.js
-    │   ├── studentController.js
-    │   └── ticketController.js
-    │
-    └── routes/                   # API Express Routers
-        ├── busRoutes.js
-        ├── dashboardRoutes.js
-        ├── driverRoutes.js
-        ├── passRoutes.js
-        ├── paymentRoutes.js
-        ├── routeRoutes.js
-        ├── studentRoutes.js
-        └── ticketRoutes.js
+    ├── package.json              # Backend dependencies (Express 5, Mongoose 9)
+    ├── config/                   # Firebase Admin SDK configuration
+    ├── middleware/               # Token verification & RBAC authorization
+    ├── models/                   # Mongoose Schemas (Bus, Route, Ticket, Driver, Pass)
+    ├── controllers/              # REST Controller business logic
+    ├── routes/                   # Express API Route handlers
+    ├── utils/demoData.js         # 🚍 Realistic Assam transit dataset
+    ├── scripts/seed_demo_data.js # Standalone database seeder script
+    └── test/                     # Automated test suites (audit & RBAC tests)
 ```
 
 ---
 
-## 📋 Prerequisites
+## 🚀 Step-by-Step Local Setup Guide
 
-Before installing the application, ensure the following are installed on your machine:
-* **Node.js**: v18.0.0 or higher (v20+ recommended). Check with `node -v`.
-* **npm**: v9.0.0 or higher. Check with `npm -v`.
-* **Git**: Installed and configured. Check with `git --version`.
-* **MongoDB**: A free MongoDB Atlas cluster or a local MongoDB database instance.
-* **Firebase Account**: Access to [Firebase Console](https://console.firebase.google.com/) for authentication and a service account key.
-
----
-
-## 🚀 Step-by-Step Installation & Setup
+Follow these simple steps to run the complete system locally.
 
 ### Step 1: Clone the Repository
 ```bash
-git clone https://github.com/<your-username>/<your-repo-name>.git
-cd ebus-project
+git clone https://github.com/anideva/ebus-management-system.git
+cd ebus-management-system/ebus-project
 ```
 
-### Step 2: Install Frontend Dependencies
-From the repository root (`ebus-project`):
+### Step 2: Install Dependencies
+Install dependencies for both the frontend and backend:
 ```bash
+# 1. Install frontend dependencies (from root)
 npm install
-```
 
-### Step 3: Install Backend Dependencies
-Navigate into the `backend` directory and install dependencies:
-```bash
+# 2. Install backend dependencies
 cd backend
 npm install
 cd ..
 ```
 
----
+### Step 3: Configure Environment Variables
 
-## ⚙️ Environment Variable Configuration
-
-The project uses separate environment configurations for the backend and the frontend. Template files (`.env.example`) are provided in both directories.
-
-> [!CAUTION]
-> Never commit actual `.env` files, passwords, or Firebase private keys to version control. The `.gitignore` file is pre-configured to ignore all `.env` and service-account files.
-
-### 1. Backend Environment Setup (`backend/.env`)
-Create a new file named `.env` inside the `backend/` directory:
-```bash
-# In backend/.env
+#### Backend Configuration (`backend/.env`):
+Create a file named `.env` inside the `backend/` folder:
+```env
 PORT=5000
-MONGO_URI=mongodb+srv://<username>:<password>@<cluster-url>/ebus-management?retryWrites=true&w=majority
+MONGO_URI=your_mongodb_atlas_connection_string
 
-# Firebase Admin Service Account:
-# Option 1 (Recommended for production/Render): Paste entire JSON content as a single line
-FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"your-project-id",...}
+# Whitelist your email for administrative access (comma-separated)
+ADMIN_EMAILS=admin@ebus.com,your-email@example.com
 
-# Option 2 (Local file): Place your downloaded service-account JSON in backend/firebase-service-account.json
+# Firebase Admin credentials: paste your service account JSON string or path
+FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"..."}
 ```
 
-#### How to obtain your Firebase Admin Service Account key:
-1. Open the [Firebase Console](https://console.firebase.google.com/).
-2. Select your project &rarr; **Project Settings** (gear icon) &rarr; **Service accounts**.
-3. Click **Generate new private key** and download the `.json` file.
-4. Either place the file in `backend/firebase-service-account.json` or paste its contents into `FIREBASE_SERVICE_ACCOUNT` in `backend/.env`.
+> [!TIP]
+> Ensure your current IP address is whitelisted in **MongoDB Atlas &rarr; Network Access &rarr; Allow Access from Anywhere (`0.0.0.0/0`)** so your local backend can connect.
 
-### 2. Frontend Environment Setup (`.env`)
-Create a new file named `.env` at the root of `ebus-project/`:
-```bash
-# In .env (root)
+#### Frontend Configuration (`.env`):
+Create a file named `.env` at the root of `ebus-project/`:
+```env
 # Points to local Express server during development
 VITE_API_URL=http://localhost:5000
 ```
-*(In production, set `VITE_API_URL` to your deployed backend URL, such as `https://your-api.onrender.com`)*.
 
----
+### Step 4: Run the Application
 
-## 💻 Running the Application Locally
+Start the backend and frontend in two separate terminal windows:
 
-The frontend and backend run as independent processes. Start them in two separate terminal windows.
-
-### Terminal 1: Start the Backend Server
 ```bash
+# Terminal 1: Start Backend (Port 5000)
 cd backend
 npm start
 ```
-* The backend server will start at: `http://localhost:5000`
-* You should see:
-  ```
-  Firebase Admin initialized successfully
-  Server running on port 5000
-  MongoDB connected successfully
-  ```
 
-### Terminal 2: Start the Frontend Application
 ```bash
-# At the root (ebus-project)
+# Terminal 2: Start Frontend (Port 5173)
 npm run dev
 ```
-* The Vite dev server will start at: `http://localhost:5173`
-* Open your browser and navigate to `http://localhost:5173`.
+
+Visit **`http://localhost:5173`** in your browser.
+
+---
+
+## 🚍 Preloading Demo Data (One-Click Seeder)
+
+To showcase the system with realistic data without manual data entry, the project includes an automated transit dataset representing the **Assam Regional Transit Corridor**:
+
+| Route Corridor | Endpoints | Intermediate Pickup Stops | Fleet Vehicles Assigned |
+|---|---|---|---|
+| **Kharupetia - Guwahati Express** | Kharupetia ➔ Guwahati | Mangaldai, Sipajhar, Baihata Chariali, Jalukbari | • `AS-01-KB-1001` (AC Deluxe)<br>• `AS-01-KB-1002` (Standard Express) |
+| **Guwahati - Kharupetia Return** | Guwahati ➔ Kharupetia | Jalukbari, Baihata Chariali, Sipajhar, Mangaldai | • `AS-01-GK-2001` (AC Deluxe) |
+| **Tezpur - Guwahati Deluxe** | Tezpur ➔ Guwahati | Kaliabor, Nagaon Bypass, Jagiroad, Khanapara | • `AS-12-TG-3001` (Volvo Multi-Axle) |
+| **Guwahati - Tezpur Deluxe** | Guwahati ➔ Tezpur | Khanapara, Jagiroad, Nagaon Bypass, Kaliabor | • `AS-12-GT-3002` (AC Sleeper) |
+| **Silchar - Guwahati Superfast** | Silchar ➔ Guwahati | Badarpur, Haflong, Lumding, Dispur | • `AS-11-SG-4001` (Super Luxury) |
+
+### How to Seed:
+* **Option A (From UI):** Log in as Admin &rarr; Navigate to `/dashboard` &rarr; Click **`⚡ Load Demo Fleet & Routes`**.
+* **Option B (From Terminal):** Run `npm run seed` from the project root.
 
 ---
 
 ## 📡 REST API Endpoint Reference
 
-All API routes require authentication using a valid Firebase ID token in the `Authorization: Bearer <token>` header, except for the public health checks.
+All endpoints (except `/health` and root) require an `Authorization: Bearer <token>` header.
 
-### Public Endpoints
-| Method | Endpoint | Description | Auth Required |
+### 1. Public & Diagnostics
+| Method | Endpoint | Description | Role Required |
 |---|---|---|---|
-| `GET` | `/` | API status message | No |
-| `GET` | `/health` | Server health and database connection status | No |
+| `GET` | `/health` | Backend status & MongoDB connectivity check | Public |
+| `GET` | `/api/auth/me` | Returns authenticated user profile and assigned role | Authenticated |
 
-### Bus Management (`/api/buses`)
-| Method | Endpoint | Description | Auth Required |
+### 2. Passenger Portal (`/api/portal`)
+| Method | Endpoint | Description | Role Required |
 |---|---|---|---|
-| `GET` | `/api/buses` | Retrieve all buses | Yes (Bearer Token) |
-| `POST` | `/api/buses` | Create a new bus | Yes (Bearer Token) |
-| `PUT` | `/api/buses/:id` | Update an existing bus | Yes (Bearer Token) |
-| `DELETE` | `/api/buses/:id` | Delete a bus by ID | Yes (Bearer Token) |
+| `GET` | `/api/portal/services` | Query available buses by origin, destination & intermediate stops | Authenticated |
+| `GET` | `/api/portal/buses/:busNumber/seats` | Get live seat booking layout for a specific bus & journey date | Authenticated |
+| `POST` | `/api/portal/book-ticket` | Book an available seat with double-booking index protection | Authenticated |
+| `GET` | `/api/portal/my-tickets` | Retrieve all tickets booked by the authenticated passenger | Authenticated |
+| `PUT` | `/api/portal/cancel-ticket/:ticketId` | Cancel a booking, release seat, and mark refund internally | Authenticated (Owner/Admin) |
+| `GET` | `/api/portal/my-passes` | Retrieve student passes owned by the authenticated student | Authenticated |
+| `POST` | `/api/portal/apply-pass` | Apply for a new subsidized student transit pass | Authenticated |
 
-### Route Management (`/api/routes`)
-| Method | Endpoint | Description | Auth Required |
+### 3. Transport Administration (Admin Protected)
+| Method | Endpoint | Description | Role Required |
 |---|---|---|---|
-| `GET` | `/api/routes` | Retrieve all transit routes | Yes (Bearer Token) |
-| `POST` | `/api/routes` | Create a new route with stops | Yes (Bearer Token) |
-| `PUT` | `/api/routes/:id` | Update route details | Yes (Bearer Token) |
-| `DELETE` | `/api/routes/:id` | Delete a route by ID | Yes (Bearer Token) |
-
-### Driver Management (`/api/drivers`)
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| `GET` | `/api/drivers` | Retrieve all drivers | Yes (Bearer Token) |
-| `POST` | `/api/drivers` | Add a driver profile | Yes (Bearer Token) |
-| `PUT` | `/api/drivers/:id` | Update driver details | Yes (Bearer Token) |
-| `DELETE` | `/api/drivers/:id` | Delete a driver record | Yes (Bearer Token) |
-
-### Student Management (`/api/students`)
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| `GET` | `/api/students` | Retrieve all registered students | Yes (Bearer Token) |
-| `POST` | `/api/students` | Register a new student | Yes (Bearer Token) |
-| `PUT` | `/api/students/:id` | Update student profile | Yes (Bearer Token) |
-| `DELETE` | `/api/students/:id` | Delete a student profile | Yes (Bearer Token) |
-
-### Ticket Management (`/api/tickets`)
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| `GET` | `/api/tickets` | Retrieve all booked tickets | Yes (Bearer Token) |
-| `POST` | `/api/tickets` | Book a ticket with seat assignment | Yes (Bearer Token) |
-| `PUT` | `/api/tickets/:id` | Update ticket details/status | Yes (Bearer Token) |
-| `DELETE` | `/api/tickets/:id` | Cancel/delete a ticket | Yes (Bearer Token) |
-
-### Pass Management (`/api/passes`)
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| `GET` | `/api/passes` | Retrieve all student bus passes | Yes (Bearer Token) |
-| `POST` | `/api/passes` | Issue a new student transit pass | Yes (Bearer Token) |
-| `PUT` | `/api/passes/:id` | Update pass details or status | Yes (Bearer Token) |
-| `DELETE` | `/api/passes/:id` | Delete a pass | Yes (Bearer Token) |
-
-### Payment Management (`/api/payments`)
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| `GET` | `/api/payments` | Retrieve all payment records | Yes (Bearer Token) |
-| `POST` | `/api/payments` | Record a new payment transaction | Yes (Bearer Token) |
-| `PUT` | `/api/payments/:id` | Update payment details | Yes (Bearer Token) |
-| `DELETE` | `/api/payments/:id` | Delete a payment record | Yes (Bearer Token) |
-
-### Dashboard Operations (`/api/dashboard`)
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| `GET` | `/api/dashboard/recent-activity` | Retrieve recent 10 audit events across all modules | Yes (Bearer Token) |
+| `GET / POST` | `/api/buses` | Retrieve all fleet buses / Add bus with route selection | `admin` |
+| `PUT / DELETE`| `/api/buses/:id` | Update bus details / Two-stage protected deletion | `admin` |
+| `GET / POST` | `/api/routes` | Retrieve transit corridors / Create route with stops | `admin` |
+| `PUT / DELETE`| `/api/routes/:id` | Update route details / Delete route | `admin` |
+| `GET / POST` | `/api/drivers` | Retrieve drivers / Register driver with license | `admin` |
+| `GET / POST` | `/api/students` | Retrieve students / Register student commuter | `admin` |
+| `GET / POST` | `/api/passes` | Manage and approve student transit passes | `admin` |
+| `GET / POST` | `/api/payments` | Audit fare transactions / Record manual payment | `admin` |
+| `GET` | `/api/dashboard/recent-activity` | Retrieve latest 10 cross-module audit logs | `admin` |
+| `POST` | `/api/dashboard/seed-demo` | Trigger transit fleet seeder service | `admin` |
 
 ---
 
-## 🗄️ Database Models & Schema
+## 🛡️ Security Hardening & Data Integrity
 
-All Mongoose models include `{ timestamps: true }`, automatically generating `createdAt` and `updatedAt` ISO date fields.
-
-```mermaid
-erDiagram
-    BUS {
-        string busNumber PK "unique"
-        string busName
-        string busType
-        string driver
-        string route
-        number capacity
-        number fare
-        string status "Active | Maintenance"
-        date createdAt
-    }
-
-    ROUTE {
-        string routeId PK "unique"
-        string routeName
-        string source
-        string destination
-        string[] stops
-        number distance
-        number estimatedTime
-        string status "Active | Inactive"
-        date createdAt
-    }
-
-    DRIVER {
-        string driverId PK "unique"
-        string driverName
-        string contactNumber
-        string experience
-        string licenseNumber "unique"
-        string assignedBus
-        string busType
-        number capacity
-        string status "Active | On Leave"
-        date createdAt
-    }
-
-    STUDENT {
-        string studentId PK "unique"
-        string studentName
-        string studentClass
-        string section
-        string contactNumber
-        string assignedRoute
-        string assignedBus
-        string status "Active | Inactive"
-        date createdAt
-    }
-
-    TICKET {
-        string ticketId PK "unique"
-        string passengerName
-        string busNumber
-        string routeName
-        string journeyDate
-        string seatNumber
-        number fare
-        string status "Booked | Cancelled | Completed"
-        date createdAt
-    }
-
-    PASS {
-        string passId PK "unique"
-        string studentName
-        string studentId
-        string busNumber
-        string routeName
-        date validFrom
-        date validUntil
-        string passType "Monthly | Quarterly | Yearly"
-        string status "Active | Expired"
-        date createdAt
-    }
-
-    PAYMENT {
-        string paymentId PK "unique"
-        string ticketId
-        string passengerName
-        number amount
-        string paymentMethod "UPI | Debit Card | Credit Card | Net Banking | Cash"
-        string transactionId "unique"
-        string status "Paid | Pending | Failed | Refunded"
-        date createdAt
-    }
-```
-
----
-
-## 🛡️ Authentication & Security Practices
-
-* **JWT Verification on All Private Routes:** The backend does not trust any user ID passed in request bodies. Every request is verified cryptographically by Firebase Admin SDK before accessing database controllers.
-* **Separation of Secrets:** Client configuration in [`src/firebase.js`](src/firebase.js) contains public identifiers only. The Firebase private key and MongoDB connection strings remain securely isolated in `backend/.env`.
-* **Zero Hardcoded Private Keys:** `firebase-service-account.json` and `.env` are strictly excluded in `.gitignore` to prevent secret leakage to GitHub.
-* **Mongoose Schema Validation:** All models enforce strict types, required field validations, and unique index constraints (`unique: true`) to prevent data corruption.
-* **Client-Side Duplicate Detection:** Forms validate against existing local state before sending requests to provide instant user feedback.
+1. **Role-Based Access Control (RBAC):** All administrative endpoints enforce `requireRole(['admin'])`. New registrations default strictly to `passenger`; admin privileges require matching the server's `ADMIN_EMAILS` environment variable.
+2. **IDOR Elimination on Tickets:** Cancellation and ticket queries enforce that non-admin passengers can only view or cancel tickets where `userEmail` or `userId` matches their verified token identity.
+3. **Double-Booking Prevention:** Enforced at the database engine level via MongoDB compound partial unique index:
+   ```javascript
+   ticketSchema.index(
+     { busNumber: 1, journeyDate: 1, seatNumber: 1 },
+     { unique: true, partialFilterExpression: { status: "Booked" } }
+   );
+   ```
+4. **Server-Enforced Fares:** Passenger booking payloads cannot tamper with ticket amounts. The server retrieves the canonical fare from the referenced bus record in MongoDB before ticket creation.
+5. **CORS Isolation:** Cross-Origin Resource Sharing is restricted to authorized production domains (`ebus-management-system.netlify.app`) and local development ports.
 
 ---
 
 ## 🧪 Testing & Quality Verification
 
-### 1. Static Analysis & Linting
-Run the ESLint suite across all components and pages:
-```bash
-npm run lint
-```
-*Expected Result:* Zero warnings and zero errors.
+The repository includes a comprehensive Node.js test suite with zero external mock frameworks:
 
-### 2. Frontend Production Build
-Validate that all modules compile and bundle cleanly:
 ```bash
+# Run backend test suite (from backend/ directory)
+npm test
+```
+
+### Test Suite Coverage:
+* **Suite 1:** Default Role Assignment on Public Registration (`passenger`)
+* **Suite 2:** Whitelisted Administrator Promotion via `ADMIN_EMAILS`
+* **Suite 3:** Hardened Ticket Ownership Checks & IDOR Protection
+* **Suite 4:** Server-Side Bus Fare Enforcement (Tamper Protection)
+* **Suite 5:** Booking Concurrency & Partial Unique Index Seat Rebooking
+* **Suite 6:** Cancellation Accounting Reality & Status Verification
+* **Suite 7:** Passenger Booking Input Validations & Bus Capacity Bounds
+* **Suite 8:** RBAC Permission Verification Across All 8 Admin Routers
+* **Suite 9:** Two-Stage Bus Deletion Protection & Referential Integrity
+* **Suite 10:** Admin Ticket Creation Bus Status Validation
+* **Suite 11:** Bus-Route Linking Contract & Multi-Stop Search Service
+
+### Quality Checks:
+```bash
+# Run frontend ESLint check
+npm run lint
+
+# Run frontend production build
 npm run build
 ```
-*Expected Result:* Clean compilation generating optimized assets in `/dist`.
-
-### 3. Backend Syntax & Compilation Verification
-Verify backend modules without starting the network listener:
-```bash
-cd backend
-node -c server.js
-```
-
-### 4. Health Check Verification
-Once the backend is started, visit `http://localhost:5000/health`:
-```json
-{
-  "status": "ok",
-  "timestamp": "2026-10-14T21:00:00.000Z",
-  "database": "connected"
-}
-```
-
----
-
-## ❓ Troubleshooting & FAQs
-
-### 1. `auth/network-request-failed` on Login or Register
-* **Cause:** Browser extensions (ad blockers, script blockers) or VPNs intercepting Firebase identity endpoints.
-* **Fix:** Test in Chrome Incognito Mode or disable extensions injecting scripts.
-
-### 2. `MongoDB connection failed: Server selection timed out`
-* **Cause:** Your IP address is not whitelisted in MongoDB Atlas Network Access.
-* **Fix:** Log in to [MongoDB Atlas](https://cloud.mongodb.com/) &rarr; **Security** &rarr; **Network Access** &rarr; Add IP Address `0.0.0.0/0` (Allow access from anywhere).
-
-### 3. `Failed to fetch` on frontend requests
-* **Cause:** The backend server is not running, or `VITE_API_URL` is pointing to an incorrect URL.
-* **Fix:** Verify the backend is running on `http://localhost:5000` and check [`src/config/api.js`](src/config/api.js).
-
-### 4. Blank screen on page refresh in production (Netlify / Vercel)
-* **Cause:** React Router SPA routes are not redirected to `index.html`.
-* **Fix:** Pre-configured in [`netlify.toml`](netlify.toml) and [`vercel.json`](vercel.json). Ensure these configuration files remain in the root directory.
-
----
-
-## 🗺️ Current Limitations & Roadmap
-
-* **Live GPS Tracking:** Future versions will integrate WebSockets and Leaflet/Mapbox for live bus coordinates.
-* **Role-Based Access Control (RBAC):** Expanding authentication to distinguish between Passenger, Driver, and Super-Admin roles.
-* **Automated Pass Expiry Cron:** Background task to transition expired passes automatically from `Active` to `Expired`.
-* **Automated Unit Tests:** Integrating Vitest and Supertest for comprehensive test automation.
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these steps:
-1. Fork the repository.
-2. Create a new branch: `git checkout -b feature/amazing-feature`.
-3. Commit your changes: `git commit -m 'Add amazing feature'`.
-4. Push to the branch: `git push origin feature/amazing-feature`.
-5. Open a Pull Request.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **ISC License** as specified in [`backend/package.json`](backend/package.json).
+This project is licensed under the **ISC License**. Developed as an enterprise-grade transit demonstration and portfolio project.
