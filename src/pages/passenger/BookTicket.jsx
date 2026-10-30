@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import PassengerNavbar from "../../components/PassengerNavbar";
 import TicketModal from "../../components/TicketModal";
+import PaymentModal from "../../components/PaymentModal";
 import { useAuth } from "../../context/AuthContext";
 import { API_BASE_URL } from "../../config/api";
 import {
@@ -38,6 +39,7 @@ function BookTicket() {
   const [bookingSuccess, setBookingSuccess] = useState(null);
   const [bookingError, setBookingError] = useState("");
   const [showBoardingPass, setShowBoardingPass] = useState(false);
+  const [showPaymentGateway, setShowPaymentGateway] = useState(false);
 
   // FETCH SERVICES
   const fetchServices = useCallback(async () => {
@@ -287,13 +289,20 @@ function BookTicket() {
     }
   };
 
-  // CONFIRM BOOKING HANDLER
-  const handleConfirmBooking = async (e) => {
+  // TRIGGER UPFRONT PAYMENT GATEWAY
+  const handleProceedToPayment = (e) => {
     e.preventDefault();
     if (!selectedBus || !selectedSeat) {
       alert("Please select a seat first.");
       return;
     }
+    setShowPaymentGateway(true);
+  };
+
+  // SUCCESSFUL GATEWAY PAYMENT CALLBACK
+  const handlePaymentSuccess = async (paymentData) => {
+    setShowPaymentGateway(false);
+    setPaymentMethod(paymentData.paymentMethod);
 
     try {
       setIsSubmitting(true);
@@ -316,7 +325,8 @@ function BookTicket() {
               journeyDate,
               seatNumber: selectedSeat,
               passengerName: user?.displayName || user?.email?.split("@")[0] || "Passenger",
-              paymentMethod,
+              paymentMethod: paymentData.paymentMethod,
+              transactionId: paymentData.transactionId,
             }),
           });
 
@@ -324,7 +334,7 @@ function BookTicket() {
             result = await response.json();
           }
         } catch (networkErr) {
-          console.warn("Network request failed, falling back to local demo ticket generation:", networkErr);
+          console.warn("Network request failed, falling back to local demo ticket generation:", networkErr.message);
         }
       }
 
@@ -344,7 +354,8 @@ function BookTicket() {
           seatNumber: selectedSeat,
           passengerName: user?.displayName || user?.email?.split("@")[0] || "Passenger",
           fare: selectedBus.fare,
-          paymentMethod,
+          paymentMethod: paymentData.paymentMethod,
+          transactionId: paymentData.transactionId,
           status: "Booked",
           bookedAt: new Date().toISOString(),
         };
@@ -353,11 +364,11 @@ function BookTicket() {
           const existing = JSON.parse(localStorage.getItem("demo_passenger_tickets") || "[]");
           localStorage.setItem("demo_passenger_tickets", JSON.stringify([localTicket, ...existing]));
         } catch (storageErr) {
-          console.warn("Local storage write error:", storageErr);
+          console.warn("Local storage write error:", storageErr.message);
         }
 
         result = {
-          message: "Ticket booked successfully (Demo Transit Mode)",
+          message: "Ticket booked successfully with upfront payment",
           ticket: localTicket,
         };
       }
@@ -378,6 +389,7 @@ function BookTicket() {
     setBookingSuccess(null);
     setBookingError("");
     setShowBoardingPass(false);
+    setShowPaymentGateway(false);
   };
 
   return (
@@ -792,7 +804,7 @@ function BookTicket() {
                       </div>
                     </div>
 
-                    <form onSubmit={handleConfirmBooking}>
+                    <form onSubmit={handleProceedToPayment}>
                       <div
                         style={{
                           display: "grid",
@@ -812,17 +824,24 @@ function BookTicket() {
                         </div>
 
                         <div className="form-group-custom">
-                          <label>Payment Method</label>
-                          <select
-                            value={paymentMethod}
-                            onChange={(e) => setPaymentMethod(e.target.value)}
+                          <label>Payment Mode</label>
+                          <div
+                            style={{
+                              fontSize: "0.82rem",
+                              fontWeight: 600,
+                              color: "var(--success)",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              height: "40px",
+                              padding: "0 10px",
+                              background: "rgba(16, 185, 129, 0.08)",
+                              border: "1px solid rgba(16, 185, 129, 0.2)",
+                              borderRadius: "8px",
+                            }}
                           >
-                            <option value="UPI">UPI / QR</option>
-                            <option value="Debit Card">Debit Card</option>
-                            <option value="Credit Card">Credit Card</option>
-                            <option value="Net Banking">Net Banking</option>
-                            <option value="Cash">Cash at Boarding</option>
-                          </select>
+                            <span>🔒 Upfront Payment via Gateway</span>
+                          </div>
                         </div>
                       </div>
 
@@ -856,8 +875,14 @@ function BookTicket() {
                             type="submit"
                             disabled={!selectedSeat || isSubmitting}
                             className="btn-primary-action"
+                            style={{
+                              background: "linear-gradient(135deg, #16a34a 0%, #15803d 100%)",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "6px",
+                            }}
                           >
-                            {isSubmitting ? "Processing..." : "Confirm & Pay"}
+                            {isSubmitting ? "Processing..." : `🔒 Pay ₹${selectedBus.fare} & Book`}
                           </button>
                         </div>
                       </div>
@@ -868,6 +893,21 @@ function BookTicket() {
             )}
           </div>
         </div>
+      )}
+
+      {/* UPFRONT PAYMENT GATEWAY MODAL */}
+      {showPaymentGateway && selectedBus && selectedSeat && (
+        <PaymentModal
+          isOpen={showPaymentGateway}
+          order={{
+            itemTitle: `Seat #${selectedSeat} - ${selectedBus.busName || selectedBus.routeName}`,
+            itemSubtitle: `${selectedBus.source} ➔ ${selectedBus.destination} • Bus ${selectedBus.busNumber}`,
+            amount: selectedBus.fare,
+            passengerName: user?.displayName || user?.email?.split("@")[0] || "Passenger",
+          }}
+          onSuccess={handlePaymentSuccess}
+          onClose={() => setShowPaymentGateway(false)}
+        />
       )}
 
       {/* PRINTABLE BOARDING PASS / PDF TICKET MODAL */}

@@ -223,7 +223,9 @@ export const bookTicket = async (req, res) => {
 
     // Create corresponding payment record
     const paymentId = `PAY-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
-    const transactionId = `TXN-${Date.now()}-${Math.floor(100000 + Math.random() * 900000)}`;
+    const resolvedTxnId =
+      (req.body.transactionId && req.body.transactionId.trim()) ||
+      `TXN-${Date.now()}-${Math.floor(100000 + Math.random() * 900000)}`;
 
     const newPayment = await Payment.create({
       paymentId,
@@ -231,8 +233,8 @@ export const bookTicket = async (req, res) => {
       passengerName: resolvedPassengerName,
       amount: bus.fare,
       paymentMethod: paymentMethod || "UPI",
-      transactionId,
-      status: "Paid",
+      transactionId: resolvedTxnId,
+      status: paymentMethod === "Cash at Boarding" ? "Pending" : "Paid",
       userId: req.user.uid,
       userEmail: (req.user.email || "").toLowerCase(),
     });
@@ -373,6 +375,25 @@ export const applyPass = async (req, res) => {
       validUntil,
       passType: validPassType,
       status: "Active",
+      userId: req.user.uid,
+      userEmail: (req.user.email || "").toLowerCase(),
+    });
+
+    // Create corresponding ledger payment record for pass subscription fee
+    const passFee = validPassType === "Yearly" ? 5000 : validPassType === "Quarterly" ? 1500 : 600;
+    const paymentId = `PAY-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const resolvedTxnId =
+      (req.body.transactionId && req.body.transactionId.trim()) ||
+      `TXN-${Date.now()}-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    await Payment.create({
+      paymentId,
+      ticketId: newPass.passId,
+      passengerName: studentName.trim(),
+      amount: passFee,
+      paymentMethod: req.body.paymentMethod || "UPI",
+      transactionId: resolvedTxnId,
+      status: "Paid",
       userId: req.user.uid,
       userEmail: (req.user.email || "").toLowerCase(),
     });
