@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 
 function PassengerNavbar() {
-  const { user, role, logout } = useAuth();
+  const { user, role, logout, isDemoUser } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -22,10 +22,20 @@ function PassengerNavbar() {
 
   return (
     <nav className="passenger-navbar">
-      <Link to="/passenger/book" className="passenger-brand">
-        <span className="passenger-brand-icon">🚌</span>
-        <span>E-Bus Passenger</span>
-      </Link>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+        <Link to="/passenger/book" className="passenger-brand">
+          <span className="passenger-brand-icon">🚌</span>
+          <span>E-Bus Transit</span>
+        </Link>
+        <span className="portal-badge portal-badge-passenger" title="Commuter Booking & Digital Pass Portal">
+          👤 Passenger Portal
+        </span>
+        {isDemoUser && (
+          <span className="portal-badge portal-badge-demo" title="Interactive Presentation Sandbox">
+            ⚡ Demo Sandbox
+          </span>
+        )}
+      </div>
 
       <ul className="passenger-nav-links">
         <li>
@@ -68,9 +78,9 @@ function PassengerNavbar() {
           <Link
             to="/dashboard"
             className="btn-admin-switch"
-            title="Switch to transport administrator console"
+            title="Return to Transport Administrator Console"
           >
-            🛠️ Admin Portal
+            🛡️ Admin Console
           </Link>
         )}
 

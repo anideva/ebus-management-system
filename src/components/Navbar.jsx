@@ -3,11 +3,13 @@ import { signOut, onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase";
 import { useNavigate, Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 import "../styles/navbar.css";
 
 function Navbar({ userName }) {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { isDemoUser } = useAuth();
 
   const [authDisplayName, setAuthDisplayName] = useState(
     auth.currentUser?.displayName || ""
@@ -66,7 +68,15 @@ function Navbar({ userName }) {
 
         <div className="logo">
           <span className="logo-icon" aria-hidden="true">🚌</span>
-          <span className="logo-text">E-Bus Management System</span>
+          <span className="logo-text">E-Bus Transit</span>
+          <span className="portal-badge portal-badge-admin" title="Transport Management & Operational Console">
+            🛡️ Admin Console
+          </span>
+          {isDemoUser && (
+            <span className="portal-badge portal-badge-demo" title="Interactive Presentation Sandbox">
+              ⚡ Demo Sandbox
+            </span>
+          )}
         </div>
       </div>
 
@@ -74,22 +84,10 @@ function Navbar({ userName }) {
         {/* Passenger Portal Switch Link */}
         <Link
           to="/passenger/book"
-          style={{
-            padding: "6px 12px",
-            fontSize: "0.82rem",
-            fontWeight: 500,
-            color: "var(--primary)",
-            backgroundColor: "var(--primary-light)",
-            borderRadius: "6px",
-            textDecoration: "none",
-            border: "1px solid var(--border-color)",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "4px",
-          }}
-          title="Open Passenger Booking Portal"
+          className="btn-portal-switch"
+          title="Preview Commuter Booking Portal"
         >
-          🎫 Passenger Portal
+          👁️ Preview Passenger View
         </Link>
 
         {/* Compact Theme Toggle */}

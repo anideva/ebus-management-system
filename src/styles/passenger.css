@@ -1066,6 +1066,44 @@
 }
 
 /* ========================================================
+   PORTAL IDENTITY & DEMO BADGES
+   ======================================================== */
+.portal-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1.2;
+}
+
+.portal-badge-admin {
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--primary);
+  border: 1px solid rgba(37, 99, 235, 0.25);
+}
+
+.portal-badge-passenger {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.portal-badge-demo {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+[data-theme="dark"] .portal-badge-demo {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.2);
+}
+
+/* ========================================================
    PRINT STYLES (SAVE AS PDF)
    ======================================================== */
 @media print {

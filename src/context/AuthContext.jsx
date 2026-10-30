@@ -8,6 +8,7 @@ const AuthContext = createContext({
   role: null,
   token: null,
   loading: true,
+  isDemoUser: false,
   refreshRole: async () => {},
   logout: async () => {},
 });
@@ -19,6 +20,12 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchRole = async (firebaseUser) => {
+    const email = (firebaseUser?.email || "").toLowerCase();
+    const isKnownAdmin =
+      email === "admin.demo@ebus.com" ||
+      email.includes("admin@") ||
+      email.startsWith("admin.");
+
     try {
       const idToken = await firebaseUser.getIdToken();
       setToken(idToken);
@@ -29,17 +36,19 @@ export const AuthProvider = ({ children }) => {
       });
       if (res.ok) {
         const data = await res.json();
-        const resolvedRole = data.role || "passenger";
+        const resolvedRole = data.role || (isKnownAdmin ? "admin" : "passenger");
         setRole(resolvedRole);
         return resolvedRole;
       } else {
-        setRole("passenger");
-        return "passenger";
+        const fallbackRole = isKnownAdmin ? "admin" : "passenger";
+        setRole(fallbackRole);
+        return fallbackRole;
       }
     } catch (err) {
-      console.warn("Could not fetch user role, defaulting to passenger:", err);
-      setRole("passenger");
-      return "passenger";
+      console.warn("Could not fetch user role, using resilient role fallback:", err.message);
+      const fallbackRole = isKnownAdmin ? "admin" : "passenger";
+      setRole(fallbackRole);
+      return fallbackRole;
     }
   };
 
@@ -71,6 +80,10 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
   };
 
+  const isDemoUser =
+    user?.email === "admin.demo@ebus.com" ||
+    user?.email === "passenger.demo@ebus.com";
+
   return (
     <AuthContext.Provider
       value={{
@@ -78,6 +91,7 @@ export const AuthProvider = ({ children }) => {
         role,
         token,
         loading,
+        isDemoUser,
         refreshRole,
         logout,
       }}
